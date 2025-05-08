@@ -1,0 +1,143 @@
+/* Sidebar Styles */
+body {
+    overflow-x: hidden;
+}
+
+#wrapper {
+    display: flex;
+    height: 100vh; /* Full viewport height */
+}
+
+#sidebar-wrapper {
+    min-width: 250px;
+    width: 250px;
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    overflow-y: auto; /* Enable scrolling if content exceeds height */
+    z-index: 1000;
+    transition: all 0.3s;
+    border-right: 1px solid rgba(0, 0, 0, 0.1);
+    background-color: #19222a !important; /* Dark blue background with !important */
+}
+
+/* Override Bootstrap's bg-light class */
+#sidebar-wrapper.bg-light,
+#sidebar-wrapper .bg-light {
+    background-color: #19222a !important;
+}
+
+#page-content-wrapper {
+    width: 100%;
+    margin-left: 250px; /* Match sidebar width */
+    min-height: 100vh;
+    padding: 15px;
+}
+
+.sidebar-heading {
+    padding: 0.875rem 1.25rem;
+    font-size: 1.2rem;
+    font-weight: bold;
+    color: white; /* White text */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center; /* Center the logo */
+}
+
+.sidebar-logo {
+    max-width: 100%;
+    height: auto;
+    max-height: 160px;
+    margin-top: 15px;
+    margin-bottom: 15px;
+}
+
+.list-group-item {
+    border: none;
+    padding: 0.75rem 1.25rem;
+    color: white !important; /* White text */
+    background-color: transparent !important;
+    font-weight: bold; /* Strong/bold text */
+    position: relative;
+    padding-left: 45px; /* Make room for the icon */
+}
+
+/* Icon styles for all menu items */
+.list-group-item i.bi,
+.list-group-item i.fa {
+    position: absolute;
+    left: 16px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    text-align: center;
+}
+
+.list-group-item:hover {
+    background-color: rgba(255, 255, 255, 0.1) !important; /* Lighter hover effect */
+}
+
+.list-group-item[data-bs-toggle="collapse"] {
+    position: relative;
+}
+
+.list-group-item[data-bs-toggle="collapse"]::after {
+    content: '\f107'; /* FontAwesome arrow down icon */
+    font-family: 'FontAwesome', sans-serif;
+    position: absolute;
+    right: 20px;
+    color: white;
+}
+
+.list-group-item[data-bs-toggle="collapse"][aria-expanded="true"]::after {
+    content: '\f106'; /* FontAwesome arrow up icon */
+}
+
+/* Target all submenu items specifically, not just when parent is expanded */
+.collapse .list-group-item,
+.collapsing .list-group-item {
+    padding-left: 45px; /* Consistent padding for icons */
+    font-size: 14px;
+    font-weight: normal !important; /* Always normal weight with !important */
+    color: rgba(255, 255, 255, 0.85) !important; /* Slightly less white for submenu */
+}
+
+/* Adjust the submenu items to indent the text after icon */
+.collapse .list-group-item i.bi,
+.collapsing .list-group-item i.bi,
+.collapse .list-group-item i.fa,
+.collapsing .list-group-item i.fa {
+    left: 35px; /* More indented for submenu items */
+}
+
+/* Override Bootstrap bg-light on menu items */
+#sidebar-wrapper .list-group-item.bg-light {
+    background-color: transparent !important;
+}
+
+/* Remove conflicting styles */
+.sidebar {
+    display: none; /* Hide unused class */
+}
+
+/* For smaller screens */
+@media (max-width: 768px) {
+    #sidebar-wrapper {
+        margin-left: -250px;
+    }
+    
+    #page-content-wrapper {
+        margin-left: 0;
+        width: 100%;
+    }
+    
+    #wrapper.toggled #sidebar-wrapper {
+        margin-left: 0;
+    }
+    
+    #wrapper.toggled #page-content-wrapper {
+        margin-left: 250px;
+    }
+}
