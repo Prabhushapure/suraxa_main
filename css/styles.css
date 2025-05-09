@@ -12,19 +12,34 @@ h1, h2, h3, h4, h5, h6 {
 
 /* Content area styles */
 .content {
-    margin-left: 260px;
     padding: 20px;
 }
 
 .header {
-    background-color: #f8f9fa;
-    padding: 10px;
+    background-color: #ebebeb;
+    padding: 15px 25px;
     border-bottom: 1px solid #dee2e6;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+    position: sticky;
+    top: 0;
+    z-index: 900;
 }
 
 .header h1 {
     margin: 0;
-    font-size: 24px;
+    color: #19222a;
+    font-size: 32px;
+    font-weight: 600;
+}
+
+.logout-btn {
+    transition: all 0.3s ease;
+    font-weight: 500;
+}
+
+.logout-btn:hover {
+    background-color: #dc3545;
+    color: white;
 }
 
 /* Remove the conflicting sidebar styling from styles.css since it's now in sidebar.css */

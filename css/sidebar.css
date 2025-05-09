@@ -39,7 +39,7 @@ body {
     padding: 0.875rem 1.25rem;
     font-size: 1.2rem;
     font-weight: bold;
-    color: white; /* White text */
+    color: white;
     text-transform: uppercase;
     letter-spacing: 1px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -59,7 +59,6 @@ body {
     padding: 0.75rem 1.25rem;
     color: white !important; /* White text */
     background-color: transparent !important;
-    font-weight: bold; /* Strong/bold text */
     position: relative;
     padding-left: 45px; /* Make room for the icon */
 }
