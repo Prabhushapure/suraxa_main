@@ -30,21 +30,24 @@ requireAuth();
             <div id="header-placeholder" data-title="Help Center"></div>
 
             <div class="container-fluid content">
-                <h1 class="mt-4">Help Center</h1>
-                <p>Welcome to the Suraxa Admin help center. Here you can find information about using the admin panel.</p>
+                <h1 class="mt-2">Help Center</h1>
                 
                 <div class="card mt-4">
-                    <div class="card-header">
-                        <h3>Frequently Asked Questions</h3>
+                    <div class="card-body">
+                        <div style="max-width: 800px; margin: 0 auto;">
+                            <video width="100%" controls autoplay style="box-shadow: 0 4px 8px rgba(0,0,0,0.1); border-radius: 6px;">
+                                <source src="assets/videos/SuraxaHelp.mp4" type="video/mp4">
+                                Your browser does not support the video tag.
+                            </video>
+                        </div>
                     </div>
                 </div>
                 
-                <div class="card mt-4">
+                <div class="card mt-5">
                     <div class="card-header">
-                        <h3>Need More Help?</h3>
+                        <h5>Need More Help? Contact Support,</h5>
                     </div>
                     <div class="card-body">
-                        <p>Contact our support team:</p>
                         <ul>
                             <li>Email: <a href="mailto:support@suraxa.com">support@suraxa.com</a></li>
                             <li>Phone: +1 (555) 123-4567</li>
