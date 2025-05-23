@@ -45,3 +45,29 @@ h1, h2, h3, h4, h5, h6 {
 /* Remove the conflicting sidebar styling from styles.css since it's now in sidebar.css */
 /* Remove bg-light override since we want the dark sidebar */
 /* Remove list-group-item-action:hover since it's handled in sidebar.css */
+
+/* Select2 Custom Styles */
+.is-invalid-select2 .select2-selection {
+    border-color: #dc3545 !important;
+}
+
+.select2-container {
+    width: 100% !important;
+}
+
+.tooltip {
+    opacity: 1;
+}
+
+.tooltip .tooltip-inner {
+    background-color: #dc3545;
+    max-width: 200px;
+    padding: 8px 12px;
+    font-size: 0.875rem;
+}
+
+.tooltip .tooltip-arrow::before {
+    border-right-color: #dc3545;
+}
+
+/* Add any existing styles below */
