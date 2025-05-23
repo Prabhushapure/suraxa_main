@@ -7,7 +7,6 @@ if (session_status() === PHP_SESSION_NONE) {
 // Dev mode flag - SET THIS TO FALSE BEFORE PRODUCTION!
 define('DEV_MODE', true);
 define('DEV_USER_ID', 'U0005'); // Your test user ID
-define('DEV_COMPANY_ID', 'C0001'); // Your test company ID
 /**
  * Check if user is authenticated
  * @return bool True if authenticated, false otherwise
@@ -16,8 +15,6 @@ function isAuthenticated() {
     // In development mode, auto-set the session variables if not set
     if (DEV_MODE) {
         $_SESSION["id"] = DEV_USER_ID;
-        $_SESSION["companyId"] = DEV_COMPANY_ID;
-        return true;
     }
     
     // Check if session ID exists
@@ -33,7 +30,7 @@ function isAuthenticated() {
     require_once 'db_connect.php';
     
     // Prepare statement to prevent SQL injection
-    $stmt = $conn->prepare("SELECT UserID FROM user WHERE UserID = ?");
+    $stmt = $conn->prepare("SELECT UserID, CompanyID FROM user WHERE UserID = ?");
     if (!$stmt) {
         error_log("Authentication failed: Prepare statement failed - " . $conn->error);
         return false;
@@ -58,6 +55,8 @@ function isAuthenticated() {
     
     // Check if user exists
     if ($result->num_rows === 1) {
+        $row = $result->fetch_assoc();
+        $_SESSION["companyId"] = $row['CompanyID'];
         return true;
     }
     
@@ -74,13 +73,6 @@ function isAuthenticated() {
  * Redirect to login page if not authenticated
  */
 function requireAuth() {
-    // In development mode, ensure session variables are set
-    if (DEV_MODE) {
-        $_SESSION["id"] = DEV_USER_ID;
-        $_SESSION["companyId"] = DEV_COMPANY_ID;
-        return;
-    }
-
     if (!isAuthenticated()) {
         error_log("Auth required but failed - redirecting to login page");
         // Store the requested URL for redirection after login
