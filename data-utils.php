@@ -147,4 +147,48 @@ if (isset($_POST['action']) && $_POST['action'] === 'createUser') {
     }
     exit;
 }
+
+// Function to delete user
+if (isset($_POST['action']) && $_POST['action'] === 'deleteUser') {
+    if (isset($_POST['userId'])) {
+        // Set UserStatus to 0 to mark as deleted (soft delete)
+        $userId = $_POST['userId'];
+        $sql = "UPDATE user SET UserStatus = 0 WHERE id = ?";
+        
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->bind_param("i", $userId);
+            if ($stmt->execute()) {
+                $response = [
+                    'success' => true,
+                    'message' => 'User deleted successfully'
+                ];
+            } else {
+                $response = [
+                    'success' => false,
+                    'message' => 'Failed to delete user: ' . $conn->error
+                ];
+            }
+            $stmt->close();
+        } else {
+            $response = [
+                'success' => false,
+                'message' => 'Failed to prepare delete statement: ' . $conn->error
+            ];
+        }
+    } else {
+        $response = [
+            'success' => false,
+            'message' => 'No user ID provided'
+        ];
+    }
+    echo json_encode($response);
+    exit;
+}
+
+// Default response for unknown action
+$response = [
+    'success' => false,
+    'message' => 'Unknown action'
+];
+echo json_encode($response);
 ?> 
