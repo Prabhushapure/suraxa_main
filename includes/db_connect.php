@@ -5,6 +5,9 @@ define('DB_USER', 'root');
 define('DB_PASS', '');
 define('DB_NAME', 'suraxa_schneider_fs');
 
+// Global connection variable
+global $conn;
+
 // Function to get database connection
 function getConnection() {
     global $conn;
@@ -34,6 +37,7 @@ function getConnection() {
     return $conn;
 }
 
-// Initialize connection
+// Initialize connection and ensure it's globally available
 $conn = getConnection();
+return $conn; // This ensures the connection is returned when the file is required
 ?>

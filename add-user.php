@@ -464,17 +464,22 @@ require_once 'includes/db_connect.php';
                                 // Reset validation state
                                 Object.keys(touchedFields).forEach(field => touchedFields[field] = false);
                                 $('.is-valid, .is-invalid').removeClass('is-valid is-invalid');
-                                // Redirect to users list or stay on page based on your needs
-                                // window.location.href = 'manage-users.php';
                             } else {
                                 alert('Failed to create user: ' + result.message);
                             }
                         } catch (e) {
-                            alert('An error occurred while processing the response');
+                            console.error('JSON Parse Error:', e);
+                            console.error('Raw Response:', response);
+                            alert('Error parsing response. Check browser console for details.');
                         }
                     },
-                    error: function() {
-                        alert('An error occurred while creating the user');
+                    error: function(xhr, status, error) {
+                        console.error('AJAX Error:', {
+                            status: status,
+                            error: error,
+                            response: xhr.responseText
+                        });
+                        alert('An error occurred while creating the user. Check browser console for details.');
                     },
                     complete: function() {
                         // Re-enable submit button and restore text

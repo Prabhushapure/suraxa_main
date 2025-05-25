@@ -1,6 +1,21 @@
 <?php
-require_once 'includes/db_connect.php';
+// Include database connection and get the connection
+$conn = require_once 'includes/db_connect.php';
 require_once 'includes/auth.php';
+
+// Enable error reporting for debugging
+error_reporting(E_ALL);
+ini_set('display_errors', 1);
+
+// Ensure we have a valid database connection
+if (!isset($conn) || !($conn instanceof mysqli) || !$conn->ping()) {
+    error_log("Database connection failed");
+    echo json_encode([
+        'success' => false,
+        'message' => 'Database connection error. Please try again later.'
+    ]);
+    exit;
+}
 
 // Function to add new organization if it doesn't exist
 if (isset($_POST['action']) && $_POST['action'] === 'addNewOrg') {
@@ -72,8 +87,16 @@ if (isset($_POST['action']) && $_POST['action'] === 'addNewRegion') {
 
 // Function to create new user
 if (isset($_POST['action']) && $_POST['action'] === 'createUser') {
+    // Enable error reporting for debugging
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    
+    // Log the incoming data
+    error_log("Creating user with data: " . print_r($_POST, true));
+    
     // Ensure user is authenticated
     requireAuth();
+    error_log("Authentication passed");
     
     // Get the next available UserID
     $sql = "SELECT CASE WHEN ISNULL(MAX(SUBSTRING(UserID, 2, 4))) = 1 
@@ -121,12 +144,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'createUser') {
             $success = $stmt->execute();
             
             if ($success) {
+                error_log("User created successfully with ID: " . $userId);
                 echo json_encode([
                     'success' => true,
                     'message' => 'User created successfully',
                     'userId' => $userId
                 ]);
             } else {
+                error_log("Failed to create user. MySQL Error: " . $stmt->error);
                 echo json_encode([
                     'success' => false,
                     'message' => 'Failed to create user: ' . $stmt->error

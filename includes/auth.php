@@ -7,11 +7,14 @@ if (session_status() === PHP_SESSION_NONE) {
 // Dev mode flag - SET THIS TO FALSE BEFORE PRODUCTION!
 define('DEV_MODE', true);
 define('DEV_USER_ID', 'U0005'); // Your test user ID
+
 /**
  * Check if user is authenticated
  * @return bool True if authenticated, false otherwise
  */
 function isAuthenticated() {
+    global $conn;
+    
     // In development mode, auto-set the session variables if not set
     if (DEV_MODE) {
         $_SESSION["id"] = DEV_USER_ID;
@@ -27,7 +30,13 @@ function isAuthenticated() {
     $userId = $_SESSION["id"];
     
     // Include database connection
-    require_once 'db_connect.php';
+    if (!isset($conn) || !($conn instanceof mysqli) || !$conn->ping()) {
+        $conn = require_once 'db_connect.php';
+        if (!$conn) {
+            error_log("Authentication failed: Could not establish database connection");
+            return false;
+        }
+    }
     
     // Prepare statement to prevent SQL injection
     $stmt = $conn->prepare("SELECT UserID, CompanyID FROM user WHERE UserID = ?");
