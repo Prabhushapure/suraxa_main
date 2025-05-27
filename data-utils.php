@@ -245,14 +245,29 @@ if (isset($_POST['action']) && $_POST['action'] === 'updateUser') {
     $sql = "UPDATE user SET 
             UserName = ?, Gender = ?, LoginID = ?, Role = ?,
             AdminAccess = ?, CreatorAccess = ?, PlayerAccess = ?,
-            UserOrg = ?, Region = ?, City = ?
-            WHERE id = ?";
+            UserOrg = ?, Region = ?, City = ?";
+
+    // Add password update if requested
+    if (isset($_POST['resetPassword']) && $_POST['resetPassword'] === 'true') {
+        $newPassword = md5($_POST['newPassword']); // Consider using better hashing in production
+        $sql .= ", Password = ?";
+    }
+    
+    $sql .= " WHERE id = ?";
     
     if ($stmt = $conn->prepare($sql)) {
-        $stmt->bind_param("ssssiiiissi", 
-            $username, $gender, $loginId, $role,
-            $admin, $creator, $player, $org, $region, $city, $userId
-        );
+        if (isset($_POST['resetPassword']) && $_POST['resetPassword'] === 'true') {
+            $stmt->bind_param("ssssiiisssis", 
+                $username, $gender, $loginId, $role,
+                $admin, $creator, $player, $org, $region, $city,
+                $newPassword, $userId
+            );
+        } else {
+            $stmt->bind_param("ssssiiiissi", 
+                $username, $gender, $loginId, $role,
+                $admin, $creator, $player, $org, $region, $city, $userId
+            );
+        }
         $success = $stmt->execute();
         
         if ($success) {

@@ -104,6 +104,40 @@ if (!$userData) {
                                 </div>
                             </div>
 
+                            <!-- Password Reset Section -->
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="resetPassword" name="resetPassword">
+                                        <label class="form-check-label fw-bold" for="resetPassword">
+                                            Reset User Password
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="passwordFields" style="display: none;">
+                                <div class="mb-3 row">
+                                    <div class="col-md-6">
+                                        <label for="newPassword" class="form-label fw-bold">New Password</label>
+                                        <input type="password" class="form-control" id="newPassword" name="newPassword"
+                                               data-bs-toggle="tooltip" data-bs-placement="right"
+                                               title="Password must be at least 6 characters long">
+                                        <div class="invalid-feedback">Password must be at least 6 characters long</div>
+                                    </div>
+                                </div>
+
+                                <div class="mb-3 row">
+                                    <div class="col-md-6">
+                                        <label for="confirmPassword" class="form-label fw-bold">Confirm Password</label>
+                                        <input type="password" class="form-control" id="confirmPassword" name="confirmPassword"
+                                               data-bs-toggle="tooltip" data-bs-placement="right"
+                                               title="Passwords must match">
+                                        <div class="invalid-feedback">Passwords do not match</div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="mb-3 row">
                                 <div class="col-md-6">
                                     <label class="form-label fw-bold">Gender *</label>
@@ -316,6 +350,51 @@ if (!$userData) {
                 width: '100%'
             });
 
+            // Password reset checkbox handling
+            $('#resetPassword').change(function() {
+                const isChecked = $(this).is(':checked');
+                $('#passwordFields').toggle(isChecked);
+                if (isChecked) {
+                    $('#newPassword, #confirmPassword').prop('required', true);
+                } else {
+                    $('#newPassword, #confirmPassword').prop('required', false);
+                    $('#newPassword, #confirmPassword').val('').removeClass('is-invalid is-valid');
+                }
+                validateForm();
+            });
+
+            // Password validation
+            $('#newPassword, #confirmPassword').on('input', function() {
+                if ($('#resetPassword').is(':checked')) {
+                    validatePasswords();
+                    validateForm();
+                }
+            });
+
+            function validatePasswords() {
+                const newPassword = $('#newPassword').val();
+                const confirmPassword = $('#confirmPassword').val();
+                let isValid = true;
+
+                // Validate new password length
+                if (newPassword.length < 6) {
+                    $('#newPassword').removeClass('is-valid').addClass('is-invalid');
+                    isValid = false;
+                } else {
+                    $('#newPassword').removeClass('is-invalid').addClass('is-valid');
+                }
+
+                // Validate password match
+                if (confirmPassword && confirmPassword !== newPassword) {
+                    $('#confirmPassword').removeClass('is-valid').addClass('is-invalid');
+                    isValid = false;
+                } else if (confirmPassword) {
+                    $('#confirmPassword').removeClass('is-invalid').addClass('is-valid');
+                }
+
+                return isValid;
+            }
+
             // Form validation
             const form = document.getElementById('editUserForm');
             const submitBtn = document.getElementById('submitBtn');
@@ -379,6 +458,11 @@ if (!$userData) {
                     }
                 }
                 isValid = isValid && userAccessValid;
+
+                // Add password validation to validateForm function
+                if ($('#resetPassword').is(':checked')) {
+                    isValid = isValid && validatePasswords();
+                }
 
                 submitBtn.disabled = !isValid;
                 return isValid;
@@ -444,6 +528,12 @@ if (!$userData) {
                 formData.append('userOrg', $('#userOrg').val());
                 formData.append('userRegion', $('#userRegion').val());
                 formData.append('city', $('#city').val());
+
+                // Add password data if reset is checked
+                if ($('#resetPassword').is(':checked')) {
+                    formData.append('resetPassword', true);
+                    formData.append('newPassword', $('#newPassword').val());
+                }
 
                 // Disable submit button and show loading state
                 submitBtn.disabled = true;
