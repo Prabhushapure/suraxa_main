@@ -147,11 +147,11 @@ $offset = $page_size * ($page - 1);
                                             echo "<td>" . htmlspecialchars($row['UserOrg']) . "</td>";
                                             echo "<td>" . htmlspecialchars($row['Region']) . "</td>";
                                             echo "<td>
-                                                    <a href='edit-user.php?id=" . $row['id'] . "' class='btn btn-sm btn-primary me-2'>
-                                                        <i class='fas fa-edit'></i>
+                                                    <a href='edit-user.php?id=" . $row['id'] . "' class='btn btn-sm btn-primary ' data-bs-toggle='tooltip' data-bs-placement='top' title='Edit user details, reset password'>
+                                                        <i class='fa fa-pencil'></i>
                                                     </a>
-                                                    <button class='btn btn-sm btn-danger' onclick='deleteUser(" . $row['id'] . ")'>
-                                                        <i class='fas fa-trash'></i>
+                                                    <button class='btn btn-sm btn-danger ' onclick='deleteUser(" . $row['id'] . ")' data-bs-toggle='tooltip' data-bs-placement='top' title='Delete user'>
+                                                        <i class='fa fa-trash'></i>
                                                     </button>
                                                   </td>";
                                             echo "</tr>";
