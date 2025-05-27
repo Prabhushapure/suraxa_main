@@ -210,6 +210,74 @@ if (isset($_POST['action']) && $_POST['action'] === 'deleteUser') {
     exit;
 }
 
+// Function to update existing user
+if (isset($_POST['action']) && $_POST['action'] === 'updateUser') {
+    // Enable error reporting for debugging
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    
+    // Log the incoming data
+    error_log("Updating user with data: " . print_r($_POST, true));
+    
+    // Ensure user is authenticated
+    requireAuth();
+    error_log("Authentication passed");
+    
+    // Get form data
+    $userId = intval($_POST['userId']);
+    $username = $_POST['username'];
+    $loginId = $_POST['loginId'];
+    $gender = $_POST['gender'];
+    $role = $_POST['role'] ?? '';
+    $userAccess = json_decode($_POST['userAccess']);
+    
+    // Set access flags
+    $admin = in_array('Admin', $userAccess) ? 1 : 0;
+    $creator = in_array('Creator', $userAccess) ? 1 : 0;
+    $player = in_array('Player', $userAccess) ? 1 : 0;
+    
+    // Get optional fields
+    $org = $_POST['userOrg'] ?? null;
+    $region = $_POST['userRegion'] ?? null;
+    $city = $_POST['city'] ?? null;
+    
+    // Update user data
+    $sql = "UPDATE user SET 
+            UserName = ?, Gender = ?, LoginID = ?, Role = ?,
+            AdminAccess = ?, CreatorAccess = ?, PlayerAccess = ?,
+            UserOrg = ?, Region = ?, City = ?
+            WHERE id = ?";
+    
+    if ($stmt = $conn->prepare($sql)) {
+        $stmt->bind_param("ssssiiiissi", 
+            $username, $gender, $loginId, $role,
+            $admin, $creator, $player, $org, $region, $city, $userId
+        );
+        $success = $stmt->execute();
+        
+        if ($success) {
+            error_log("User updated successfully. ID: " . $userId);
+            echo json_encode([
+                'success' => true,
+                'message' => 'User updated successfully'
+            ]);
+        } else {
+            error_log("Failed to update user. MySQL Error: " . $stmt->error);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to update user: ' . $stmt->error
+            ]);
+        }
+        $stmt->close();
+    } else {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Failed to prepare statement: ' . $conn->error
+        ]);
+    }
+    exit;
+}
+
 // Default response for unknown action
 $response = [
     'success' => false,
