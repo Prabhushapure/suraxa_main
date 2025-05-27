@@ -101,11 +101,13 @@ require_once 'includes/db_connect.php';
                                     <label class="form-label fw-bold">Gender *</label>
                                     <div>
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="gender" id="genderMale" value="Male" checked required>
+                                            <input class="form-check-input" type="radio" name="gender" id="genderMale" 
+                                                   value="M" required>
                                             <label class="form-check-label" for="genderMale">Male</label>
                                         </div>
                                         <div class="form-check form-check-inline">
-                                            <input class="form-check-input" type="radio" name="gender" id="genderFemale" value="Female" required>
+                                            <input class="form-check-input" type="radio" name="gender" id="genderFemale" 
+                                                   value="F" required>
                                             <label class="form-check-label" for="genderFemale">Female</label>
                                         </div>
                                     </div>

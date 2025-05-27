@@ -144,12 +144,12 @@ if (!$userData) {
                                     <div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="gender" id="genderMale" 
-                                                   value="Male" <?php echo $userData['Gender'] === 'Male' ? 'checked' : ''; ?> required>
+                                                   value="M" <?php echo ($userData['Gender'] == 'M') ? 'checked' : ''; ?> required>
                                             <label class="form-check-label" for="genderMale">Male</label>
                                         </div>
                                         <div class="form-check form-check-inline">
                                             <input class="form-check-input" type="radio" name="gender" id="genderFemale" 
-                                                   value="Female" <?php echo $userData['Gender'] === 'Female' ? 'checked' : ''; ?> required>
+                                                   value="F" <?php echo ($userData['Gender'] == 'F') ? 'checked' : ''; ?> required>
                                             <label class="form-check-label" for="genderFemale">Female</label>
                                         </div>
                                     </div>
