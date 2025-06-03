@@ -89,14 +89,10 @@ if (isset($_POST['action']) && $_POST['action'] === 'addNewRegion') {
 if (isset($_POST['action']) && $_POST['action'] === 'createUser') {
     // Enable error reporting for debugging
     error_reporting(E_ALL);
-    ini_set('display_errors', 1);
-    
-    // Log the incoming data
-    error_log("Creating user with data: " . print_r($_POST, true));
+    ini_set('display_errors', 1);    
     
     // Ensure user is authenticated
     requireAuth();
-    error_log("Authentication passed");
     
     // Get the next available UserID
     $sql = "SELECT CASE WHEN ISNULL(MAX(SUBSTRING(UserID, 2, 4))) = 1 
@@ -144,7 +140,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'createUser') {
             $success = $stmt->execute();
             
             if ($success) {
-                error_log("User created successfully with ID: " . $userId);
                 echo json_encode([
                     'success' => true,
                     'message' => 'User created successfully',
@@ -210,18 +205,15 @@ if (isset($_POST['action']) && $_POST['action'] === 'deleteUser') {
     exit;
 }
 
+
 // Function to update existing user
 if (isset($_POST['action']) && $_POST['action'] === 'updateUser') {
     // Enable error reporting for debugging
     error_reporting(E_ALL);
-    ini_set('display_errors', 1);
-    
-    // Log the incoming data
-    error_log("Updating user with data: " . print_r($_POST, true));
+    ini_set('display_errors', 1);    
     
     // Ensure user is authenticated
     requireAuth();
-    error_log("Authentication passed");
     
     // Get form data
     $userId = intval($_POST['userId']);
@@ -271,7 +263,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'updateUser') {
         $success = $stmt->execute();
         
         if ($success) {
-            error_log("User updated successfully. ID: " . $userId);
             echo json_encode([
                 'success' => true,
                 'message' => 'User updated successfully'
