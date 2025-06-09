@@ -17,17 +17,17 @@ function isAuthenticated() {
     
     // In development mode, auto-set the session variables if not set
     if (DEV_MODE) {
-        $_SESSION["id"] = DEV_USER_ID;
+        $_SESSION["userID"] = DEV_USER_ID;
     }
     
     // Check if session ID exists
-    if (!isset($_SESSION["id"]) || empty($_SESSION["id"])) {
+    if (!isset($_SESSION["userID"]) || empty($_SESSION["userID"])) {
         error_log("Authentication failed: No session ID found");
         return false;
     }
     
     // Get user ID from session
-    $userId = $_SESSION["id"];
+    $userId = $_SESSION["userID"];
     
     // Include database connection
     if (!isset($conn) || !($conn instanceof mysqli) || !$conn->ping()) {
