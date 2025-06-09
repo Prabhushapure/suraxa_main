@@ -24,6 +24,18 @@ $showNewUsers = isset($_GET['filter']) && $_GET['filter'] === 'new_users';
 // Set number of records per page
 $page_size = 20;
 $offset = $page_size * ($page - 1);
+
+// Get total count of all active users for this company (not filtered by search or new users filter)
+$totalUsers = 0;
+$countSql = "SELECT COUNT(*) as total FROM user WHERE CompanyID = ? AND UserStatus <> 0";
+if ($countStmt = $conn->prepare($countSql)) {
+    $countStmt->bind_param("s", $_SESSION['companyId']);
+    $countStmt->execute();
+    $countResult = $countStmt->get_result();
+    $countRow = $countResult->fetch_assoc();
+    $totalUsers = $countRow['total'];
+    $countStmt->close();
+}
 ?>
 
 <!DOCTYPE html>
@@ -81,23 +93,58 @@ $offset = $page_size * ($page - 1);
                                             <i class="fas fa-search"></i> Search
                                         </button>
                                     </div>
-                                    <div class="form-check form-switch bg-light rounded p-2 border d-flex align-items-center" 
-                                         style="--bs-bg-opacity: .5;"
-                                         data-bs-toggle="tooltip" 
-                                         data-bs-placement="top" 
-                                         title="Users that have not received an email invite yet">
-                                        <label class="form-check-label" for="showNewUsers">Show new users only</label>
-                                        <div style="width: 20px;"></div>
-                                        <input class="form-check-input" 
-                                               style="width: 3em; height: 1.5em; margin: 0;" 
-                                               type="checkbox" 
-                                               role="switch"
-                                               id="showNewUsers" 
-                                               <?php echo $showNewUsers ? 'checked' : ''; ?>>
+                                    <div class="d-flex align-items-center gap-3">
+                                        <div class="bg-light rounded p-2 border d-flex align-items-center" 
+                                             style="--bs-bg-opacity: .5;">
+                                            <span class="fw-bold">Total users - <?php echo $totalUsers; ?></span>
+                                        </div>
+                                        <div class="form-check form-switch bg-light rounded p-2 border d-flex align-items-center" 
+                                             style="--bs-bg-opacity: .5;"
+                                             data-bs-toggle="tooltip" 
+                                             data-bs-placement="top" 
+                                             title="Users that have not received an email invite yet">
+                                            <label class="form-check-label" for="showNewUsers">Show new users only</label>
+                                            <div style="width: 20px;"></div>
+                                            <input class="form-check-input" 
+                                                   style="width: 3em; height: 1.5em; margin: 0;" 
+                                                   type="checkbox" 
+                                                   role="switch"
+                                                   id="showNewUsers" 
+                                                   <?php echo $showNewUsers ? 'checked' : ''; ?>>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <?php
+                        // Get count of filtered users for pagination calculation
+                        $filteredCountSql = "SELECT COUNT(*) as total 
+                                           FROM user 
+                                           WHERE CompanyID = ? 
+                                           AND UserName LIKE ? ";
+                        
+                        // Add status condition based on filter
+                        if ($showNewUsers) {
+                            $filteredCountSql .= "AND UserStatus = 1 ";
+                        } else {
+                            $filteredCountSql .= "AND UserStatus <> 0 ";
+                        }
+                        
+                        $filteredUsers = 0;
+                        if ($filteredCountStmt = $conn->prepare($filteredCountSql)) {
+                            $searchPattern = "%$nameFilter%";
+                            $filteredCountStmt->bind_param("ss", $_SESSION['companyId'], $searchPattern);
+                            $filteredCountStmt->execute();
+                            $filteredCountResult = $filteredCountStmt->get_result();
+                            $filteredCountRow = $filteredCountResult->fetch_assoc();
+                            $filteredUsers = $filteredCountRow['total'];
+                            $filteredCountStmt->close();
+                        }
+                        
+                        // Calculate total pages based on filtered results
+                        $totalPages = ceil($filteredUsers / $page_size);
+                        ?>
 
                         <!-- Users Table -->
                         <div class="table-responsive">
@@ -170,12 +217,13 @@ $offset = $page_size * ($page - 1);
                                         <?php echo $page <= 1 ? 'disabled' : ''; ?>>
                                     <i class="fas fa-chevron-left"></i> Previous
                                 </button>
-                                <button class="btn btn-secondary ms-2" onclick="changePage(<?php echo $page + 1; ?>)">
+                                <button class="btn btn-secondary ms-2" onclick="changePage(<?php echo $page + 1; ?>)"
+                                        <?php echo $page >= $totalPages ? 'disabled' : ''; ?>>
                                     Next <i class="fas fa-chevron-right"></i>
                                 </button>
                             </div>
                             <div class="text-muted">
-                                Page <?php echo $page; ?>
+                                Page <?php echo $page; ?> of <?php echo $totalPages; ?>
                             </div>
                         </div>
                     </div>
