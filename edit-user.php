@@ -86,6 +86,16 @@ if (!$userData) {
                             <!-- User Information -->
                             <div class="mb-3 row">
                                 <div class="col-md-6">
+                                    <label for="userIdDisplay" class="form-label fw-bold">User ID</label>
+                                    <input type="text" class="form-control" id="userIdDisplay" name="userIdDisplay" disabled
+                                           value="<?php echo htmlspecialchars($userData['UserID']); ?>"
+                                           data-bs-toggle="tooltip" data-bs-placement="right" 
+                                           title="User ID (read-only)">
+                                </div>
+                            </div>
+
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
                                     <label for="username" class="form-label fw-bold">User Full Name *</label>
                                     <input type="text" class="form-control" id="username" name="username" required
                                            value="<?php echo htmlspecialchars($userData['UserName']); ?>"
@@ -105,11 +115,11 @@ if (!$userData) {
                             </div>
 
                             <!-- Password Reset Section -->
-                            <div class="mb-3 row">
+                            <div class="mb-4 mt-4 row">
                                 <div class="col-md-6">
                                     <div class="form-check">
                                         <input class="form-check-input" type="checkbox" id="resetPassword" name="resetPassword">
-                                        <label class="form-check-label fw-bold" for="resetPassword">
+                                        <label class="form-check-label fw-bold text-danger" for="resetPassword">
                                             Reset User Password
                                         </label>
                                     </div>
