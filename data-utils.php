@@ -2,6 +2,7 @@
 // Include database connection and get the connection
 $conn = require_once 'includes/db_connect.php';
 require_once 'includes/auth.php';
+require_once 'includes/user-validation-utils.php';
 
 // Enable error reporting for debugging
 error_reporting(E_ALL);
@@ -94,6 +95,19 @@ if (isset($_POST['action']) && $_POST['action'] === 'createUser') {
     // Ensure user is authenticated
     requireAuth();
     
+    // Get form data for email validation
+    $loginId = $_POST['loginId'];
+    
+    // Check if email already exists
+    $emailValidation = checkExistingEmails($loginId, $conn);
+    if (!$emailValidation['success']) {
+        echo json_encode([
+            'success' => false,
+            'message' => $emailValidation['message']
+        ]);
+        exit;
+    }
+    
     // Get the next available UserID
     $sql = "SELECT CASE WHEN ISNULL(MAX(SUBSTRING(UserID, 2, 4))) = 1 
             THEN 0 ELSE MAX(SUBSTRING(UserID, 2, 4)) END AS maximum 
@@ -108,7 +122,6 @@ if (isset($_POST['action']) && $_POST['action'] === 'createUser') {
         $stmt->close();
         
         // Get form data
-        $loginId = $_POST['loginId'];
         $username = $_POST['username'];
         $password = md5($_POST['password']); // Consider using better hashing in production
         $gender = $_POST['gender'];
@@ -217,8 +230,19 @@ if (isset($_POST['action']) && $_POST['action'] === 'updateUser') {
     
     // Get form data
     $userId = intval($_POST['userId']);
-    $username = $_POST['username'];
     $loginId = $_POST['loginId'];
+    
+    // Check if email already exists
+    $emailValidation = checkExistingEmails($loginId, $conn);
+    if (!$emailValidation['success']) {
+        echo json_encode([
+            'success' => false,
+            'message' => $emailValidation['message']
+        ]);
+        exit;
+    }
+    
+    $username = $_POST['username'];
     $gender = $_POST['gender'];
     $role = $_POST['role'] ?? '';
     $userAccess = json_decode($_POST['userAccess']);

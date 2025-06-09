@@ -2,6 +2,7 @@
 // Include database connection and get the connection
 $conn = require_once 'includes/db_connect.php';
 require_once 'includes/auth.php';
+require_once 'includes/user-validation-utils.php';
 
 // Enable error reporting for debugging
 error_reporting(E_ALL);
@@ -28,29 +29,7 @@ function validateRowCount($rows) {
     return array('success' => true);
 }
 
-// Helper function to check for existing email addresses
-function checkExistingEmails($loginIds, $conn) {
-    $escapedIds = array_map(function($id) use ($conn) {
-        return "'" . mysqli_real_escape_string($conn, $id) . "'";
-    }, $loginIds);
-    
-    $idList = implode(',', $escapedIds);
-    $sql = "SELECT LoginID FROM user WHERE LoginID IN ($idList)";
-    $result = mysqli_query($conn, $sql);
-    
-    $existingEmails = array();
-    while ($row = mysqli_fetch_assoc($result)) {
-        $existingEmails[] = $row['LoginID'];
-    }
-    
-    if (!empty($existingEmails)) {
-        return array(
-            'success' => false,
-            'message' => 'The following email addresses already exist in the database: ' . implode(', ', $existingEmails)
-        );
-    }
-    return array('success' => true);
-}
+
 
 // Helper function to validate password lengths
 function validatePasswords($rows) {
