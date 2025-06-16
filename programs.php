@@ -156,10 +156,8 @@ $offset = $page_size * ($page - 1);
         }
 
         function viewDashboard(programId) {
-            // For now, this function does nothing as requested
-            // You can later implement navigation to dashboard
-            console.log('View dashboard for program ID:', programId);
-            // Example: window.location.href = 'program-dashboard.php?id=' + programId;
+            // Navigate to dashboard page with programID parameter
+            window.location.href = 'dashboard.php?programID=' + programId;
         }
     </script>
 </body>
