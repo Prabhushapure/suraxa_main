@@ -88,11 +88,6 @@ require_once 'includes/db_connect.php';
                                     Upload the Saved .csv File
                                 </h5>
                                 <p class="card-text">Click on "Choose file" below, select the .csv file that has all new users, and click on "Upload New Users".</p>
-                                <!-- <form id="uploadForm" method="post">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="fas fa-upload me-2"></i>Upload New Users
-                                    </button>
-                                </form> -->
 
                                 <form id="uploadForm" method="post" action="upload-utils.php" enctype="multipart/form-data">
                                     <div class="input-group">

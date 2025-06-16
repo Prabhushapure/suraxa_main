@@ -308,6 +308,93 @@ if (isset($_POST['action']) && $_POST['action'] === 'updateUser') {
     exit;
 }
 
+// Function to fetch programs
+if (isset($_POST['action']) && $_POST['action'] === 'getPrograms') {
+    // Ensure user is authenticated
+    requireAuth();
+    
+    // Get pagination parameters
+    $page = isset($_POST['page']) ? (int)$_POST['page'] : 1;
+    $page = max(1, $page); // Ensure page is at least 1
+    $page_size = 20;
+    $offset = $page_size * ($page - 1);
+    
+    // Get search filter if provided
+    $nameFilter = isset($_POST['name']) ? $_POST['name'] : '';
+    
+    try {
+        // Get total count of programs
+        $countSql = "SELECT COUNT(*) as total FROM program";
+        $countParams = [];
+        $countTypes = "";
+        
+        if (!empty($nameFilter)) {
+            $countSql .= " WHERE ProgramName LIKE ?";
+            $countParams[] = "%$nameFilter%";
+            $countTypes .= "s";
+        }
+        
+        $totalPrograms = 0;
+        if ($countStmt = $conn->prepare($countSql)) {
+            if (!empty($countParams)) {
+                $countStmt->bind_param($countTypes, ...$countParams);
+            }
+            $countStmt->execute();
+            $countResult = $countStmt->get_result();
+            $countRow = $countResult->fetch_assoc();
+            $totalPrograms = $countRow['total'];
+            $countStmt->close();
+        }
+        
+        // Fetch programs with pagination
+        $sql = "SELECT ProgramID, ProgramName, CreatedDate FROM program";
+        $params = [];
+        $types = "";
+        
+        if (!empty($nameFilter)) {
+            $sql .= " WHERE ProgramName LIKE ?";
+            $params[] = "%$nameFilter%";
+            $types .= "s";
+        }
+        
+        $sql .= " ORDER BY CreatedDate DESC LIMIT ? OFFSET ?";
+        $params[] = $page_size;
+        $params[] = $offset;
+        $types .= "ii";
+        
+        $programs = [];
+        if ($stmt = $conn->prepare($sql)) {
+            if (!empty($params)) {
+                $stmt->bind_param($types, ...$params);
+            }
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            while ($row = $result->fetch_assoc()) {
+                $programs[] = $row;
+            }
+            $stmt->close();
+        }
+        
+        $totalPages = ceil($totalPrograms / $page_size);
+        
+        echo json_encode([
+            'success' => true,
+            'programs' => $programs,
+            'totalPrograms' => $totalPrograms,
+            'totalPages' => $totalPages,
+            'currentPage' => $page
+        ]);
+    } catch (Exception $e) {
+        error_log("Error fetching programs: " . $e->getMessage());
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error fetching programs: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
 // Default response for unknown action
 $response = [
     'success' => false,
