@@ -11,12 +11,24 @@ requireAuth();
 // Include database connection
 require_once 'includes/db_connect.php';
 
+// Include reports utilities
+require_once 'reports-utils.php';
+
 $pageTitle = "User Reports";
 
 // Get parameters from the reports.php form
 $programParam = isset($_GET['p']) ? $_GET['p'] : [];
 $startDate = isset($_GET['sd']) ? $_GET['sd'] : '';
 $endDate = isset($_GET['ed']) ? $_GET['ed'] : '';
+$nameFilter = isset($_GET['name']) ? $_GET['name'] : '';
+
+// Get pagination parameters
+$page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+$page = max(1, $page); // Ensure page is at least 1
+
+// Set number of records per page
+$page_size = 20;
+$offset = $page_size * ($page - 1);
 
 // Handle program selection
 $selectedPrograms = [];
@@ -55,6 +67,20 @@ if ($programParam === 'all') {
         $stmt->close();
     }
 }
+
+// Generate report data with pagination
+$reportData = [];
+$totalRecords = 0;
+if (!empty($selectedPrograms)) {
+    // Get total count for pagination
+    $totalRecords = getReportCount($selectedPrograms, $startDate, $endDate, $nameFilter, $conn, $isAllPrograms);
+    
+    // Get paginated data
+    $reportData = generateUserReport($selectedPrograms, $startDate, $endDate, $nameFilter, $conn, $isAllPrograms, $page_size, $offset);
+}
+
+// Calculate total pages
+$totalPages = ceil($totalRecords / $page_size);
 ?>
 
 <!DOCTYPE html>
@@ -106,11 +132,27 @@ if ($programParam === 'all') {
             min-height: 400px;
         }
         
-        .coming-soon {
-            text-align: center;
-            color: #6c757d;
-            font-style: italic;
-            margin: 50px 0;
+        .report-table-container {
+            overflow-x: auto;
+            max-width: 100%;
+        }
+        
+        .report-table {
+            min-width: 800px;
+            white-space: nowrap;
+        }
+        
+        .report-table td,
+        .report-table th {
+            white-space: nowrap;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            max-width: 150px;
+        }
+        
+        .report-table td:first-child,
+        .report-table th:first-child {
+            max-width: 100px;
         }
     </style>
 </head>
@@ -130,7 +172,7 @@ if ($programParam === 'all') {
                         <div class="d-flex justify-content-between align-items-center">
                             <h1 class="mt-2"><?php echo $pageTitle; ?></h1>
                             <a href="reports.php" class="btn btn-secondary">
-                                <i class="fas fa-arrow-left"></i> Back to Reports
+                                <i class="fas fa-arrow-left"></i> Edit filters
                             </a>
                         </div>
                     </div>
@@ -178,17 +220,152 @@ if ($programParam === 'all') {
                         <div class="report-content">
                             <h4 class="mb-4"><i class="fas fa-chart-bar"></i> Generated Report</h4>
                             
-                            <div class="coming-soon">
-                                <i class="fas fa-tools fa-3x mb-3"></i>
-                                <h5>Report Implementation Coming Soon</h5>
-                                <p>The report generation functionality will be implemented here.</p>
-                                <p class="text-muted">
-                                    This page received the following parameters:
-                                    <br><strong>Programs:</strong> <?php echo $isAllPrograms ? 'all (' . count($selectedPrograms) . ' programs)' : implode(', ', $selectedPrograms); ?>
-                                    <br><strong>Start Date:</strong> <?php echo $startDate; ?>
-                                    <br><strong>End Date:</strong> <?php echo $endDate; ?>
-                                </p>
-                            </div>
+                            <?php if (!empty($selectedPrograms)): ?>
+                                <!-- Search Bar -->
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <div class="input-group" style="width: 50%;">
+                                            <input type="text" class="form-control" id="searchName" 
+                                                   placeholder="Search by name..." 
+                                                   value="<?php echo htmlspecialchars($nameFilter); ?>">
+                                            <button class="btn btn-primary" type="button" onclick="filterByName()">
+                                                <i class="fas fa-search"></i> Search
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Report Table -->
+                                <div class="table-responsive report-table-container">
+                                    <table class="table table-striped table-hover report-table">
+                                        <thead>
+                                            <tr>
+                                                <th>User ID</th>
+                                                <th>Name</th>
+                                                <th>Email</th>
+                                                <th>Org/Vendor</th>
+                                                <th>Region</th>
+                                                <th>City</th>
+                                                <th>Score</th>
+                                                <th>Program Status</th>
+                                                <th>Program Result</th>
+                                                <th>Start Date</th>
+                                                <th>End Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <?php if (!empty($reportData)): ?>
+                                                <?php foreach ($reportData as $row): ?>
+                                                    <tr>
+                                                        <td><?php echo htmlspecialchars($row['UserID']); ?></td>
+                                                        <td><?php echo htmlspecialchars($row['UserName']); ?></td>
+                                                        <td><?php echo htmlspecialchars($row['LoginID']); ?></td>
+                                                        <td><?php echo htmlspecialchars($row['UserOrg']); ?></td>
+                                                        <td><?php echo htmlspecialchars($row['Region']); ?></td>
+                                                        <td><?php echo htmlspecialchars($row['City']); ?></td>
+                                                        <td>
+                                                            <?php 
+                                                            $score = $row['ScorePercentage'];
+                                                            if ($score !== null && $score !== '') {
+                                                                echo number_format((float)$score, 1) . '%';
+                                                            } else {
+                                                                echo '<span class="text-muted">NA</span>';
+                                                            }
+                                                            ?>
+                                                        </td>
+                                                        <td>
+                                                            <?php 
+                                                            $status = $row['ProgramStatus'];
+                                                            $statusClass = '';
+                                                            $statusIcon = '';
+                                                            
+                                                            switch($status) {
+                                                                case 'Complete':
+                                                                    $statusClass = 'bg-success text-white';
+                                                                    $statusIcon = 'fas fa-check-circle';
+                                                                    break;
+                                                                case 'In-Progress':
+                                                                    $statusClass = 'bg-warning text-dark';
+                                                                    $statusIcon = 'fas fa-clock';
+                                                                    break;
+                                                                case 'Not Started':
+                                                                    $statusClass = 'bg-secondary text-white';
+                                                                    $statusIcon = 'fas fa-pause-circle';
+                                                                    break;
+                                                            }
+                                                            ?>
+                                                            <span class="badge <?php echo $statusClass; ?>">
+                                                                <i class="<?php echo $statusIcon; ?>"></i> 
+                                                                <?php echo htmlspecialchars($status); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            <?php 
+                                                            $result = $row['ProgramResult'];
+                                                            $resultClass = '';
+                                                            $resultIcon = '';
+                                                            
+                                                            switch($result) {
+                                                                case 'Pass':
+                                                                    $resultClass = 'text-success';
+                                                                    $resultIcon = 'fas fa-check';
+                                                                    break;
+                                                                case 'Fail':
+                                                                    $resultClass = 'text-danger';
+                                                                    $resultIcon = 'fas fa-times';
+                                                                    break;
+                                                                case 'NA':
+                                                                    $resultClass = 'text-muted';
+                                                                    $resultIcon = 'fas fa-minus';
+                                                                    break;
+                                                            }
+                                                            ?>
+                                                            <span class="<?php echo $resultClass; ?>">
+                                                                <i class="<?php echo $resultIcon; ?>"></i> 
+                                                                <?php echo htmlspecialchars($result); ?>
+                                                            </span>
+                                                        </td>
+                                                        <td><?php echo htmlspecialchars($row['StartDate']); ?></td>
+                                                        <td><?php echo htmlspecialchars($row['EndDate']); ?></td>
+                                                    </tr>
+                                                <?php endforeach; ?>
+                                            <?php else: ?>
+                                                <tr>
+                                                    <td colspan="11" class="text-center text-muted">
+                                                        <i class="fas fa-info-circle"></i> No data found for the selected criteria.
+                                                    </td>
+                                                </tr>
+                                            <?php endif; ?>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <!-- Pagination -->
+                                <div class="d-flex justify-content-between align-items-center mt-4">
+                                    <div>
+                                        <button class="btn btn-secondary" onclick="changePage(<?php echo $page - 1; ?>)" 
+                                                <?php echo $page <= 1 ? 'disabled' : ''; ?>>
+                                            <i class="fas fa-chevron-left"></i> Previous
+                                        </button>
+                                        <button class="btn btn-secondary ms-2" onclick="changePage(<?php echo $page + 1; ?>)"
+                                                <?php echo $page >= $totalPages ? 'disabled' : ''; ?>>
+                                            Next <i class="fas fa-chevron-right"></i>
+                                        </button>
+                                    </div>
+                                    <div class="text-muted">
+                                        Page <?php echo $page; ?> of <?php echo $totalPages; ?>
+                                    </div>
+                                </div>
+                            <?php else: ?>
+                                <div class="text-center text-muted">
+                                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                                    <h5>No Programs Selected</h5>
+                                    <p>Please go back and select at least one program to generate the report.</p>
+                                    <a href="reports.php" class="btn btn-primary">
+                                        <i class="fas fa-arrow-left"></i> Go Back to Reports
+                                    </a>
+                                </div>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -202,5 +379,38 @@ if ($programParam === 'all') {
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/components.js"></script>
     <script src="js/main.js"></script>
+    
+    <script>
+        function filterByName() {
+            const searchValue = document.getElementById('searchName').value.trim();
+            let url = new URL(window.location.href);
+            
+            // Reset to page 1 when searching
+            url.searchParams.delete('page');
+            
+            if (searchValue) {
+                url.searchParams.set('name', searchValue);
+            } else {
+                url.searchParams.delete('name');
+            }
+            
+            window.location.href = url.toString();
+        }
+
+        function changePage(newPage) {
+            if (newPage < 1) return;
+            
+            let url = new URL(window.location.href);
+            url.searchParams.set('page', newPage);
+            window.location.href = url.toString();
+        }
+
+        // Handle enter key in search box
+        document.getElementById('searchName')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                filterByName();
+            }
+        });
+    </script>
 </body>
 </html> 
