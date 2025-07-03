@@ -45,10 +45,15 @@ function generateUserReport($programIds, $startDate, $endDate, $nameFilter, $con
  * Get report for all programs
  */
 function getAllProgramsReport($startDate, $endDate, $nameFilter, $conn, $limit = null, $offset = null) {
-    $sql = "SELECT user_program_playno.UserID, user.UserName, user.LoginID, user.UserOrg,
+    // First query: Users who have started programs (get the row with highest PlayNo for each user/program combination)
+    $sql1 = "SELECT user_program_playno.UserID, user.UserName, user.LoginID, user.UserOrg,
             user.Region, user.City, program.ProgramName, 
-            user_program_playno.Status, user_program_playno.StartTime, user_program_playno.EndTime,
-            user_program_playno.Pass, user_program_playno.ScorePercentage AS ScorePercentage
+            user_program_playno.ScorePercentage AS ScorePercentage,
+            CASE WHEN user_program_playno.Status = 'Completed' THEN 'Complete' ELSE 'In-Progress' END AS ProgramStatus,
+            CASE WHEN user_program_playno.Status = 'Completed' THEN 
+                CASE WHEN user_program_playno.Pass = 1 THEN 'Pass' ELSE 'Fail' END 
+                ELSE 'NA' END AS ProgramResult,
+            user_program_playno.StartTime AS StartDate, user_program_playno.EndTime AS EndDate
             FROM user_program_playno
             JOIN user ON user_program_playno.UserID = user.UserID
             JOIN program ON user_program_playno.ProgramID = program.ProgramID
@@ -61,40 +66,89 @@ function getAllProgramsReport($startDate, $endDate, $nameFilter, $conn, $limit =
                      AND user_program_playno.PlayNo = latest.MaxPlayNo
             WHERE user.UserStatus != 0";
     
-    $params = [];
-    $types = "";
+    $params1 = [];
+    $types1 = "";
     
     // Add name filter
     if (!empty($nameFilter)) {
-        $sql .= " AND user.UserName LIKE ?";
-        $params[] = "%$nameFilter%";
-        $types .= "s";
+        $sql1 .= " AND user.UserName LIKE ?";
+        $params1[] = "%$nameFilter%";
+        $types1 .= "s";
     }
     
     // Add date filters
     if ($startDate !== 'NA' && !empty($startDate)) {
-        $sql .= " AND DATE(user_program_playno.StartTime) >= ?";
-        $params[] = $startDate;
-        $types .= "s";
+        $sql1 .= " AND DATE(user_program_playno.StartTime) >= ?";
+        $params1[] = $startDate;
+        $types1 .= "s";
     }
     
     if ($endDate !== 'NA' && !empty($endDate)) {
-        $sql .= " AND DATE(user_program_playno.StartTime) <= ?";
-        $params[] = $endDate;
-        $types .= "s";
+        $sql1 .= " AND DATE(user_program_playno.StartTime) <= ?";
+        $params1[] = $endDate;
+        $types1 .= "s";
     }
     
-    $sql .= " ORDER BY user.UserName, program.ProgramName";
+    // Second query: Users who haven't started any programs - create one row per program per user
+    $sql2 = "SELECT user.UserID, user.UserName, user.LoginID, user.UserOrg, user.Region, user.City,
+            program.ProgramName, NULL AS ScorePercentage, 
+            'Not Started' AS ProgramStatus, 'NA' AS ProgramResult, 
+            NULL AS StartDate, NULL AS EndDate
+            FROM user
+            CROSS JOIN program
+            WHERE user.UserID NOT IN(
+                SELECT DISTINCT UserID FROM user_program_playno";
     
-    // Add pagination if specified
+    $params2 = [];
+    $types2 = "";
+    
+    // Add date filter to exclusion if dates are specified
+    if ($startDate !== 'NA' && !empty($startDate)) {
+        $sql2 .= " WHERE DATE(StartTime) >= ?";
+        $params2[] = $startDate;
+        $types2 .= "s";
+        
+        if ($endDate !== 'NA' && !empty($endDate)) {
+            $sql2 .= " AND DATE(StartTime) <= ?";
+            $params2[] = $endDate;
+            $types2 .= "s";
+        }
+    } else if ($endDate !== 'NA' && !empty($endDate)) {
+        $sql2 .= " WHERE DATE(StartTime) <= ?";
+        $params2[] = $endDate;
+        $types2 .= "s";
+    }
+    
+    $sql2 .= ") AND user.UserStatus NOT IN(0, 1)";
+    
+    // Add name filter for second query
+    if (!empty($nameFilter)) {
+        $sql2 .= " AND user.UserName LIKE ?";
+        $params2[] = "%$nameFilter%";
+        $types2 .= "s";
+    }
+    
+    // Execute both queries and merge results
+    $data1 = executeReportQuery($sql1, $params1, $types1, $conn);
+    $data2 = executeReportQuery($sql2, $params2, $types2, $conn);
+    
+    $allData = array_merge($data1, $data2);
+    
+    // Sort the combined data
+    usort($allData, function($a, $b) {
+        $nameCompare = strcmp($a['UserName'], $b['UserName']);
+        if ($nameCompare === 0) {
+            return strcmp($a['ProgramName'], $b['ProgramName']);
+        }
+        return $nameCompare;
+    });
+    
+    // Apply pagination if specified
     if ($limit !== null && $offset !== null) {
-        $sql .= " LIMIT ? OFFSET ?";
-        $params[] = $limit;
-        $params[] = $offset;
-        $types .= "ii";
+        $allData = array_slice($allData, $offset, $limit);
     }
     
-    return executeReportQuery($sql, $params, $types, $conn);
+    return $allData;
 }
 
 /**
@@ -278,34 +332,81 @@ function getReportCount($programIds, $startDate, $endDate, $nameFilter, $conn, $
  * Count records for all programs report
  */
 function getAllProgramsReportCount($startDate, $endDate, $nameFilter, $conn) {
-    $sql = "SELECT COUNT(*) as total
+    // Count users who have started programs
+    $sql1 = "SELECT COUNT(*) as total
             FROM user_program_playno
             JOIN user ON user_program_playno.UserID = user.UserID
             JOIN program ON user_program_playno.ProgramID = program.ProgramID
-            WHERE user_program_playno.PlayNo >= 1 AND user.UserStatus != 0";
+            JOIN (
+                SELECT UserID, ProgramID, MAX(PlayNo) as MaxPlayNo
+                FROM user_program_playno 
+                GROUP BY UserID, ProgramID
+            ) latest ON user_program_playno.UserID = latest.UserID 
+                     AND user_program_playno.ProgramID = latest.ProgramID 
+                     AND user_program_playno.PlayNo = latest.MaxPlayNo
+            WHERE user.UserStatus != 0";
     
-    $params = [];
-    $types = "";
+    $params1 = [];
+    $types1 = "";
     
     if (!empty($nameFilter)) {
-        $sql .= " AND user.UserName LIKE ?";
-        $params[] = "%$nameFilter%";
-        $types .= "s";
+        $sql1 .= " AND user.UserName LIKE ?";
+        $params1[] = "%$nameFilter%";
+        $types1 .= "s";
     }
     
     if ($startDate !== 'NA' && !empty($startDate)) {
-        $sql .= " AND DATE(user_program_playno.StartTime) >= ?";
-        $params[] = $startDate;
-        $types .= "s";
+        $sql1 .= " AND DATE(user_program_playno.StartTime) >= ?";
+        $params1[] = $startDate;
+        $types1 .= "s";
     }
     
     if ($endDate !== 'NA' && !empty($endDate)) {
-        $sql .= " AND DATE(user_program_playno.StartTime) <= ?";
-        $params[] = $endDate;
-        $types .= "s";
+        $sql1 .= " AND DATE(user_program_playno.StartTime) <= ?";
+        $params1[] = $endDate;
+        $types1 .= "s";
     }
     
-    return executeCountQuery($sql, $params, $types, $conn);
+    $count1 = executeCountQuery($sql1, $params1, $types1, $conn);
+    
+    // Count users who haven't started any programs (multiplied by number of programs)
+    $sql2 = "SELECT COUNT(*) as total
+            FROM user
+            CROSS JOIN program
+            WHERE user.UserID NOT IN(
+                SELECT DISTINCT UserID FROM user_program_playno";
+    
+    $params2 = [];
+    $types2 = "";
+    
+    // Add date filter to exclusion if dates are specified
+    if ($startDate !== 'NA' && !empty($startDate)) {
+        $sql2 .= " WHERE DATE(StartTime) >= ?";
+        $params2[] = $startDate;
+        $types2 .= "s";
+        
+        if ($endDate !== 'NA' && !empty($endDate)) {
+            $sql2 .= " AND DATE(StartTime) <= ?";
+            $params2[] = $endDate;
+            $types2 .= "s";
+        }
+    } else if ($endDate !== 'NA' && !empty($endDate)) {
+        $sql2 .= " WHERE DATE(StartTime) <= ?";
+        $params2[] = $endDate;
+        $types2 .= "s";
+    }
+    
+    $sql2 .= ") AND user.UserStatus NOT IN(0, 1)";
+    
+    if (!empty($nameFilter)) {
+        $sql2 .= " AND user.UserName LIKE ?";
+        $params2[] = "%$nameFilter%";
+        $types2 .= "s";
+    }
+    
+    $count2 = executeCountQuery($sql2, $params2, $types2, $conn);
+    
+    return $count1 + $count2;
 }
 
 /**
