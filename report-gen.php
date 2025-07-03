@@ -138,7 +138,7 @@ $totalPages = ceil($totalRecords / $page_size);
         }
         
         .report-table {
-            min-width: 800px;
+            min-width: 100px;
             white-space: nowrap;
         }
         
@@ -153,6 +153,24 @@ $totalPages = ceil($totalRecords / $page_size);
         .report-table td:first-child,
         .report-table th:first-child {
             max-width: 100px;
+        }
+        
+        /* Name column - reduced width */
+        .report-table td:nth-child(2),
+        .report-table th:nth-child(2) {
+            max-width: 120px;
+        }
+        
+        /* Email column - reduced width */
+        .report-table td:nth-child(3),
+        .report-table th:nth-child(3) {
+            max-width: 140px;
+        }
+        
+        /* Program Name column - increased width */
+        .report-table td:nth-child(4),
+        .report-table th:nth-child(4) {
+            max-width: 250px;
         }
     </style>
 </head>
@@ -243,12 +261,10 @@ $totalPages = ceil($totalRecords / $page_size);
                                                 <th>User ID</th>
                                                 <th>Name</th>
                                                 <th>Email</th>
-                                                <th>Org/Vendor</th>
-                                                <th>Region</th>
-                                                <th>City</th>
+                                                <th>Program Name</th>
                                                 <th>Score</th>
-                                                <th>Program Status</th>
-                                                <th>Program Result</th>
+                                                <th>Status</th>
+                                                <th>Result</th>
                                                 <th>Start Date</th>
                                                 <th>End Date</th>
                                             </tr>
@@ -260,70 +276,57 @@ $totalPages = ceil($totalRecords / $page_size);
                                                         <td><?php echo htmlspecialchars($row['UserID']); ?></td>
                                                         <td><?php echo htmlspecialchars($row['UserName']); ?></td>
                                                         <td><?php echo htmlspecialchars($row['LoginID']); ?></td>
-                                                        <td><?php echo htmlspecialchars($row['UserOrg']); ?></td>
-                                                        <td><?php echo htmlspecialchars($row['Region']); ?></td>
-                                                        <td><?php echo htmlspecialchars($row['City']); ?></td>
+                                                        <td><?php echo htmlspecialchars($row['ProgramName']); ?></td>
                                                         <td>
                                                             <?php 
-                                                            $score = $row['ScorePercentage'];
-                                                            if ($score !== null && $score !== '') {
-                                                                echo number_format((float)$score, 1) . '%';
+                                                            if ($row['ScorePercentage'] !== null) {
+                                                                echo number_format($row['ScorePercentage'], 1) . '%';
                                                             } else {
-                                                                echo '<span class="text-muted">NA</span>';
+                                                                echo '<span class="text-muted">-</span>';
                                                             }
                                                             ?>
                                                         </td>
                                                         <td>
                                                             <?php 
-                                                            $status = $row['ProgramStatus'];
-                                                            $statusClass = '';
-                                                            $statusIcon = '';
+                                                            $status = $row['ProgramStatus'] ?? 'Unknown';
+                                                            $badgeClass = '';
                                                             
-                                                            switch($status) {
+                                                            switch ($status) {
                                                                 case 'Complete':
-                                                                    $statusClass = 'bg-success text-white';
-                                                                    $statusIcon = 'fas fa-check-circle';
+                                                                    $badgeClass = 'badge bg-success';
                                                                     break;
                                                                 case 'In-Progress':
-                                                                    $statusClass = 'bg-warning text-dark';
-                                                                    $statusIcon = 'fas fa-clock';
+                                                                    $badgeClass = 'badge bg-warning text-dark';
                                                                     break;
                                                                 case 'Not Started':
-                                                                    $statusClass = 'bg-secondary text-white';
-                                                                    $statusIcon = 'fas fa-pause-circle';
+                                                                    $badgeClass = 'badge bg-secondary';
                                                                     break;
+                                                                default:
+                                                                    $badgeClass = 'badge bg-light text-dark';
                                                             }
                                                             ?>
-                                                            <span class="badge <?php echo $statusClass; ?>">
-                                                                <i class="<?php echo $statusIcon; ?>"></i> 
-                                                                <?php echo htmlspecialchars($status); ?>
-                                                            </span>
+                                                            <span class="<?php echo $badgeClass; ?>"><?php echo htmlspecialchars($status); ?></span>
                                                         </td>
                                                         <td>
                                                             <?php 
-                                                            $result = $row['ProgramResult'];
+                                                            $result = $row['ProgramResult'] ?? 'Unknown';
                                                             $resultClass = '';
-                                                            $resultIcon = '';
                                                             
-                                                            switch($result) {
+                                                            switch ($result) {
                                                                 case 'Pass':
-                                                                    $resultClass = 'text-success';
-                                                                    $resultIcon = 'fas fa-check';
+                                                                    $resultClass = 'text-success fw-bold';
                                                                     break;
                                                                 case 'Fail':
-                                                                    $resultClass = 'text-danger';
-                                                                    $resultIcon = 'fas fa-times';
+                                                                    $resultClass = 'text-danger fw-bold';
                                                                     break;
                                                                 case 'NA':
                                                                     $resultClass = 'text-muted';
-                                                                    $resultIcon = 'fas fa-minus';
                                                                     break;
+                                                                default:
+                                                                    $resultClass = 'text-muted';
                                                             }
                                                             ?>
-                                                            <span class="<?php echo $resultClass; ?>">
-                                                                <i class="<?php echo $resultIcon; ?>"></i> 
-                                                                <?php echo htmlspecialchars($result); ?>
-                                                            </span>
+                                                            <span class="<?php echo $resultClass; ?>"><?php echo htmlspecialchars($result); ?></span>
                                                         </td>
                                                         <td><?php echo htmlspecialchars($row['StartDate']); ?></td>
                                                         <td><?php echo htmlspecialchars($row['EndDate']); ?></td>
@@ -331,7 +334,7 @@ $totalPages = ceil($totalRecords / $page_size);
                                                 <?php endforeach; ?>
                                             <?php else: ?>
                                                 <tr>
-                                                    <td colspan="11" class="text-center text-muted">
+                                                    <td colspan="12" class="text-center text-muted">
                                                         <i class="fas fa-info-circle"></i> No data found for the selected criteria.
                                                     </td>
                                                 </tr>
@@ -341,28 +344,31 @@ $totalPages = ceil($totalRecords / $page_size);
                                 </div>
 
                                 <!-- Pagination -->
-                                <div class="d-flex justify-content-between align-items-center mt-4">
-                                    <div>
-                                        <button class="btn btn-secondary" onclick="changePage(<?php echo $page - 1; ?>)" 
-                                                <?php echo $page <= 1 ? 'disabled' : ''; ?>>
-                                            <i class="fas fa-chevron-left"></i> Previous
-                                        </button>
-                                        <button class="btn btn-secondary ms-2" onclick="changePage(<?php echo $page + 1; ?>)"
-                                                <?php echo $page >= $totalPages ? 'disabled' : ''; ?>>
-                                            Next <i class="fas fa-chevron-right"></i>
-                                        </button>
+                                <?php if ($totalRecords > 0): ?>
+                                    <div class="d-flex justify-content-between align-items-center mt-4">
+                                        <div>
+                                            <button class="btn btn-secondary" onclick="changePage(<?php echo $page - 1; ?>)" 
+                                                    <?php echo $page <= 1 ? 'disabled' : ''; ?>>
+                                                <i class="fas fa-chevron-left"></i> Previous
+                                            </button>
+                                            <button class="btn btn-secondary ms-2" onclick="changePage(<?php echo $page + 1; ?>)"
+                                                    <?php echo $page >= $totalPages ? 'disabled' : ''; ?>>
+                                                Next <i class="fas fa-chevron-right"></i>
+                                            </button>
+                                        </div>
+                                        <div class="text-muted">
+                                            Showing <?php echo (($page - 1) * $page_size) + 1; ?> to <?php echo min($page * $page_size, $totalRecords); ?> of <?php echo $totalRecords; ?> records
+                                            (Page <?php echo $page; ?> of <?php echo $totalPages; ?>)
+                                        </div>
                                     </div>
-                                    <div class="text-muted">
-                                        Page <?php echo $page; ?> of <?php echo $totalPages; ?>
-                                    </div>
-                                </div>
+                                <?php endif; ?>
                             <?php else: ?>
-                                <div class="text-center text-muted">
-                                    <i class="fas fa-exclamation-triangle fa-3x mb-3"></i>
+                                <div class="text-center text-muted py-5">
+                                    <i class="fas fa-info-circle fa-3x mb-3"></i>
                                     <h5>No Programs Selected</h5>
-                                    <p>Please go back and select at least one program to generate the report.</p>
+                                    <p>Please select at least one program to generate a report.</p>
                                     <a href="reports.php" class="btn btn-primary">
-                                        <i class="fas fa-arrow-left"></i> Go Back to Reports
+                                        <i class="fas fa-arrow-left"></i> Back to Reports
                                     </a>
                                 </div>
                             <?php endif; ?>
@@ -379,7 +385,7 @@ $totalPages = ceil($totalRecords / $page_size);
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="js/components.js"></script>
     <script src="js/main.js"></script>
-    
+
     <script>
         function filterByName() {
             const searchValue = document.getElementById('searchName').value.trim();

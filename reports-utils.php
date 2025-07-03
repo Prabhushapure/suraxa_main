@@ -34,11 +34,18 @@ function getAllProgramsReport($startDate, $endDate, $nameFilter, $conn, $limit =
     $sql = "SELECT user_program_playno.UserID, user.UserName, user.LoginID, user.UserOrg,
             user.Region, user.City, program.ProgramName, 
             user_program_playno.Status, user_program_playno.StartTime, user_program_playno.EndTime,
-            user_program_playno.Pass, MAX(user_program_playno.ScorePercentage) AS ScorePercentage
+            user_program_playno.Pass, user_program_playno.ScorePercentage AS ScorePercentage
             FROM user_program_playno
             JOIN user ON user_program_playno.UserID = user.UserID
             JOIN program ON user_program_playno.ProgramID = program.ProgramID
-            WHERE user_program_playno.PlayNo >= 1 AND user.UserStatus != 0";
+            JOIN (
+                SELECT UserID, ProgramID, MAX(PlayNo) as MaxPlayNo
+                FROM user_program_playno 
+                GROUP BY UserID, ProgramID
+            ) latest ON user_program_playno.UserID = latest.UserID 
+                     AND user_program_playno.ProgramID = latest.ProgramID 
+                     AND user_program_playno.PlayNo = latest.MaxPlayNo
+            WHERE user.UserStatus != 0";
     
     $params = [];
     $types = "";
@@ -63,7 +70,7 @@ function getAllProgramsReport($startDate, $endDate, $nameFilter, $conn, $limit =
         $types .= "s";
     }
     
-    $sql .= " GROUP BY user_program_playno.UserID, user_program_playno.ProgramID ORDER BY user.UserName, program.ProgramName";
+    $sql .= " ORDER BY user.UserName, program.ProgramName";
     
     // Add pagination if specified
     if ($limit !== null && $offset !== null) {
@@ -99,9 +106,9 @@ function getSpecificProgramsReport($programIds, $startDate, $endDate, $nameFilte
  * Get report for a single program (includes users who haven't started)
  */
 function getSingleProgramReport($programId, $startDate, $endDate, $nameFilter, $conn) {
-    // First query: Users who have started the program
+    // First query: Users who have started the program (get the row with highest PlayNo for each user)
     $sql1 = "SELECT user.UserID, user.UserName, user.LoginID, user.UserOrg, user.Region, user.City, 
-             program.ProgramName, MAX(user_program_playno.ScorePercentage) AS ScorePercentage,
+             program.ProgramName, user_program_playno.ScorePercentage AS ScorePercentage,
              CASE WHEN user_program_playno.Status = 'Completed' THEN 'Complete' ELSE 'In-Progress' END AS ProgramStatus,
              CASE WHEN user_program_playno.Status = 'Completed' THEN 
                  CASE WHEN user_program_playno.Pass = 1 THEN 'Pass' ELSE 'Fail' END 
@@ -110,10 +117,18 @@ function getSingleProgramReport($programId, $startDate, $endDate, $nameFilter, $
              FROM user_program_playno 
              JOIN user ON user_program_playno.UserID = user.UserID
              JOIN program ON user_program_playno.ProgramID = program.ProgramID
+             JOIN (
+                 SELECT UserID, ProgramID, MAX(PlayNo) as MaxPlayNo
+                 FROM user_program_playno 
+                 WHERE ProgramID = ? 
+                 GROUP BY UserID, ProgramID
+             ) latest ON user_program_playno.UserID = latest.UserID 
+                      AND user_program_playno.ProgramID = latest.ProgramID 
+                      AND user_program_playno.PlayNo = latest.MaxPlayNo
              WHERE user_program_playno.ProgramID = ? AND user.UserStatus != 0";
     
-    $params1 = [$programId];
-    $types1 = "s";
+    $params1 = [$programId, $programId];
+    $types1 = "ss";
     
     // Add name filter
     if (!empty($nameFilter)) {
@@ -134,8 +149,6 @@ function getSingleProgramReport($programId, $startDate, $endDate, $nameFilter, $
         $params1[] = $endDate;
         $types1 .= "s";
     }
-    
-    $sql1 .= " GROUP BY user_program_playno.UserID";
     
     // Second query: Users who haven't started the program
     $sql2 = "SELECT user.UserID, user.UserName, user.LoginID, user.UserOrg, user.Region, user.City,
