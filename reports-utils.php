@@ -1,6 +1,20 @@
 <?php
 // reports-utils.php - Utility functions for generating reports
 
+// Handle CSV download request
+if (isset($_GET['download_csv']) && $_GET['download_csv'] == '1') {
+    require_once 'includes/db_connect.php';
+    
+    // Get parameters
+    $programParam = isset($_GET['p']) ? $_GET['p'] : [];
+    $startDate = isset($_GET['sd']) ? $_GET['sd'] : '';
+    $endDate = isset($_GET['ed']) ? $_GET['ed'] : '';
+    
+    // Generate CSV and download
+    generateCSVDownload($programParam, $startDate, $endDate, $conn);
+    exit;
+}
+
 /**
  * Generate user report data based on filters
  * @param array $programIds - Array of program IDs or 'all'
@@ -395,5 +409,116 @@ function executeCountQuery($sql, $params, $types, $conn) {
     }
     
     return $count;
+}
+
+/**
+ * Generate and download CSV report
+ */
+function generateCSVDownload($programParam, $startDate, $endDate, $conn) {
+    // Handle program selection
+    $selectedPrograms = [];
+    $isAllPrograms = false;
+    
+    if ($programParam === 'all') {
+        // All programs selected
+        $isAllPrograms = true;
+        $sql = "SELECT ProgramID FROM program ORDER BY ProgramName ASC";
+        
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->execute();
+            $result = $stmt->get_result();
+            
+            while ($row = $result->fetch_assoc()) {
+                $selectedPrograms[] = $row['ProgramID'];
+            }
+            $stmt->close();
+        }
+    } else if (!empty($programParam) && is_array($programParam)) {
+        // Specific programs selected
+        $selectedPrograms = $programParam;
+    }
+    
+    // Get full report data (without name filter and pagination)
+    $reportData = [];
+    if (!empty($selectedPrograms)) {
+        $reportData = generateUserReport($selectedPrograms, $startDate, $endDate, '', $conn, $isAllPrograms);
+    }
+    
+    // Generate CSV content
+    $csvContent = generateCSVContent($reportData);
+    
+    // Set headers for file download
+    $filename = 'user_report_' . date('Y-m-d_H-i-s') . '.csv';
+    header('Content-Type: text/csv');
+    header('Content-Disposition: attachment; filename="' . $filename . '"');
+    header('Cache-Control: no-cache, must-revalidate');
+    header('Expires: Sat, 26 Jul 1997 05:00:00 GMT');
+    
+    // Output CSV content
+    echo $csvContent;
+}
+
+/**
+ * Generate CSV content from report data
+ */
+function generateCSVContent($reportData) {
+    $csv = '';
+    
+    // Add CSV headers
+    $headers = [
+        'User ID',
+        'Name', 
+        'Email',
+        'Program Name',
+        'Org/Vendor',
+        'Region',
+        'City',
+        'Score',
+        'Status',
+        'Result',
+        'Start Date',
+        'End Date'
+    ];
+    
+    $csv .= implode(',', array_map('escapeCsvField', $headers)) . "\n";
+    
+    // Add data rows
+    foreach ($reportData as $row) {
+        $csvRow = [
+            $row['UserID'],
+            $row['UserName'],
+            $row['LoginID'],
+            $row['ProgramName'],
+            $row['UserOrg'],
+            $row['Region'],
+            $row['City'],
+            $row['ScorePercentage'] !== null ? number_format($row['ScorePercentage'], 1) . '%' : '-',
+            $row['ProgramStatus'],
+            $row['ProgramResult'],
+            $row['StartDate'],
+            $row['EndDate']
+        ];
+        
+        $csv .= implode(',', array_map('escapeCsvField', $csvRow)) . "\n";
+    }
+    
+    return $csv;
+}
+
+/**
+ * Escape CSV field for proper formatting
+ */
+function escapeCsvField($field) {
+    // Convert null to empty string
+    if ($field === null) {
+        $field = '';
+    }
+    
+    // If field contains comma, quote, or newline, wrap in quotes and escape quotes
+    if (strpos($field, ',') !== false || strpos($field, '"') !== false || strpos($field, "\n") !== false) {
+        $field = '"' . str_replace('"', '""', $field) . '"';
+    }
+    
+    return $field;
 }
 ?> 

@@ -236,7 +236,20 @@ $totalPages = ceil($totalRecords / $page_size);
 
                         <!-- Report Content Area -->
                         <div class="report-content">
-                            <h4 class="mb-4"><i class="fas fa-chart-bar"></i> Generated Report</h4>
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h4 class="mb-0"><i class="fas fa-chart-bar"></i> Generated Report</h4>
+                                <?php if (!empty($selectedPrograms)): ?>
+                                    <button type="button" 
+                                            class="btn btn-success btn-lg" 
+                                            onclick="downloadFullReport()"
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="This report contains more user fields. After download, open report in Excel/Sheets"
+                                            <?php echo empty($reportData) ? 'disabled' : ''; ?>>
+                                        <i class="fas fa-download"></i> Download Full Report
+                                    </button>
+                                <?php endif; ?>
+                            </div>
                             
                             <?php if (!empty($selectedPrograms)): ?>
                                 <!-- Search Bar -->
@@ -334,7 +347,7 @@ $totalPages = ceil($totalRecords / $page_size);
                                                 <?php endforeach; ?>
                                             <?php else: ?>
                                                 <tr>
-                                                    <td colspan="12" class="text-center text-muted">
+                                                    <td colspan="9" class="text-center text-muted">
                                                         <i class="fas fa-info-circle"></i> No data found for the selected criteria.
                                                     </td>
                                                 </tr>
@@ -387,6 +400,14 @@ $totalPages = ceil($totalRecords / $page_size);
     <script src="js/main.js"></script>
 
     <script>
+        // Initialize tooltips when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl);
+            });
+        });
+
         function filterByName() {
             const searchValue = document.getElementById('searchName').value.trim();
             let url = new URL(window.location.href);
@@ -417,6 +438,52 @@ $totalPages = ceil($totalRecords / $page_size);
                 filterByName();
             }
         });
+
+        function downloadFullReport() {
+            // Check if button is disabled
+            const btn = event.target.closest('button');
+            if (btn.disabled) {
+                return;
+            }
+            
+            // Show loading state
+            const originalContent = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+            btn.disabled = true;
+
+            // Get current URL parameters (excluding name filter)
+            let url = new URL(window.location.href);
+            const params = new URLSearchParams();
+            
+            // Keep program and date filters, but remove name filter
+            if (url.searchParams.get('p')) {
+                params.set('p', url.searchParams.get('p'));
+            }
+            if (url.searchParams.get('sd')) {
+                params.set('sd', url.searchParams.get('sd'));
+            }
+            if (url.searchParams.get('ed')) {
+                params.set('ed', url.searchParams.get('ed'));
+            }
+            params.set('download_csv', '1');
+
+            // Create download URL
+            const downloadUrl = 'reports-utils.php?' + params.toString();
+
+            // Create temporary link and trigger download
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.download = 'user_report.csv';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+
+            // Restore button state
+            setTimeout(() => {
+                btn.innerHTML = originalContent;
+                btn.disabled = false;
+            }, 2000);
+        }
     </script>
 </body>
 </html> 
