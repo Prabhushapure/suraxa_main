@@ -2,7 +2,7 @@
 // Database configuration constants
 define('DB_SERVER', 'localhost');
 define('DB_USER', 'root');
-define('DB_PASS', '');
+define('DB_PASS', 'prabhu@antiz');
 define('DB_NAME', 'suraxa_schneider_fs');
 
 // Global connection variable
