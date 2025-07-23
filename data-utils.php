@@ -107,75 +107,106 @@ if (isset($_POST['action']) && $_POST['action'] === 'createUser') {
         ]);
         exit;
     }
-    
-    // Get the next available UserID
-    $sql = "SELECT CASE WHEN ISNULL(MAX(SUBSTRING(UserID, 2, 4))) = 1 
-            THEN 0 ELSE MAX(SUBSTRING(UserID, 2, 4)) END AS maximum 
-            FROM user";
-    
-    if ($stmt = $conn->prepare($sql)) {
-        $stmt->execute();
-        $result = $stmt->get_result();
-        $row = $result->fetch_assoc();
-        $nextNum = sprintf('%04d', $row['maximum'] + 1);
-        $userId = 'U' . $nextNum;
-        $stmt->close();
-        
-        // Get form data
-        $username = $_POST['username'];
-        $password = md5($_POST['password']); // Consider using better hashing in production
-        $gender = $_POST['gender'];
-        $role = $_POST['role'] ?? '';
-        $userAccess = json_decode($_POST['userAccess']);
-        $companyId = $_SESSION['companyId'];
-        
-        // Set access flags
-        $admin = in_array('Admin', $userAccess) ? 1 : 0;
-        $creator = in_array('Creator', $userAccess) ? 1 : 0;
-        $player = in_array('Player', $userAccess) ? 1 : 0;
-        
-        // Get optional fields
-        $org = $_POST['userOrg'] ?? null;
-        $region = $_POST['userRegion'] ?? null;
-        $city = $_POST['city'] ?? null;
-        
-        // Insert new user
-        $insertSql = "INSERT INTO user (UserID, Password, UserName, Gender, CompanyID, LoginID, Role, 
-                     AdminAccess, CreatorAccess, PlayerAccess, UserStatus, UserOrg, Region, City) 
-                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?)";
-        
-        if ($stmt = $conn->prepare($insertSql)) {
-            $stmt->bind_param("sssssssiiisss", 
-                $userId, $password, $username, $gender, $companyId, $loginId, $role,
-                $admin, $creator, $player, $org, $region, $city
-            );
-            
-            $success = $stmt->execute();
-            
-            if ($success) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'User created successfully',
-                    'userId' => $userId
-                ]);
-            } else {
-                error_log("Failed to create user. MySQL Error: " . $stmt->error);
+
+    // Check if userId is provided and not blank
+    $userId = isset($_POST['userId']) ? trim($_POST['userId']) : '';
+    if ($userId !== '') {
+        // Check if this UserID already exists
+        $checkUserIdSql = "SELECT COUNT(*) as cnt FROM user WHERE UserID = ?";
+        if ($stmt = $conn->prepare($checkUserIdSql)) {
+            $stmt->bind_param("s", $userId);
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            if ($row['cnt'] > 0) {
                 echo json_encode([
                     'success' => false,
-                    'message' => 'Failed to create user: ' . $stmt->error
+                    'message' => 'The User ID already exists. Please choose a different User ID.'
                 ]);
+                exit;
             }
+            $stmt->close();
+        }
+    } else {
+        // Get the next available UserID (U-series logic)
+        $sql = "SELECT CASE WHEN ISNULL(MAX(SUBSTRING(UserID, 2, 4))) = 1 
+                THEN 0 ELSE MAX(SUBSTRING(UserID, 2, 4)) END AS maximum 
+                FROM user";
+        if ($stmt = $conn->prepare($sql)) {
+            $stmt->execute();
+            $result = $stmt->get_result();
+            $row = $result->fetch_assoc();
+            $nextNum = sprintf('%04d', $row['maximum'] + 1);
+            $userId = 'U' . $nextNum;
             $stmt->close();
         } else {
             echo json_encode([
                 'success' => false,
-                'message' => 'Failed to prepare statement: ' . $conn->error
+                'message' => 'Failed to generate UserID: ' . $conn->error
+            ]);
+            exit;
+        }
+    }
+    
+    // Get form data
+    $username = $_POST['username'];
+    $password = md5($_POST['password']); // Consider using better hashing in production
+    $gender = $_POST['gender'];
+    $role = $_POST['role'] ?? '';
+    $userAccess = json_decode($_POST['userAccess']);
+    $companyId = $_SESSION['companyId'];
+    
+    // Set access flags
+    $admin = in_array('Admin', $userAccess) ? 1 : 0;
+    $creator = in_array('Creator', $userAccess) ? 1 : 0;
+    $player = in_array('Player', $userAccess) ? 1 : 0;
+    
+    // Get optional fields
+    $org = $_POST['userOrg'] ?? null;
+    $region = $_POST['userRegion'] ?? null;
+    $city = $_POST['city'] ?? null;
+    $mobile = $_POST['mobile'] ?? null;
+    $employeeStatus = $_POST['employeeStatus'] ?? null;
+    $employeeLevel = $_POST['employeeLevel'] ?? null;
+    $division = $_POST['division'] ?? null;
+    $department = $_POST['department'] ?? null;
+    $designation = $_POST['designation'] ?? null;
+    $location = $_POST['location'] ?? null;
+    $block = $_POST['block'] ?? null;
+    $function = $_POST['function'] ?? null;
+    
+    // Insert new user
+    $insertSql = "INSERT INTO user (UserID, Password, UserName, Gender, CompanyID, LoginID, Role, 
+                 AdminAccess, CreatorAccess, PlayerAccess, UserStatus, UserOrg, Region, City, Mobile, EmpRollStatus, EmpLevel,
+                 Division, Department, Designation, Location, Block, JobFunction) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    if ($stmt = $conn->prepare($insertSql)) {
+        $stmt->bind_param("sssssssiiisssssssssssss", 
+            $userId, $password, $username, $gender, $companyId, $loginId, $role,
+            $admin, $creator, $player, $org, $region, $city, $mobile, $employeeStatus, $employeeLevel, $division, $department, $designation, $location, $block, $function
+        );
+        
+        $success = $stmt->execute();
+        
+        if ($success) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'User created successfully',
+                'userId' => $userId
+            ]);
+        } else {
+            error_log("Failed to create user. MySQL Error: " . $stmt->error);
+            echo json_encode([
+                'success' => false,
+                'message' => 'Failed to create user: ' . $stmt->error
             ]);
         }
+        $stmt->close();
     } else {
         echo json_encode([
             'success' => false,
-            'message' => 'Failed to generate UserID: ' . $conn->error
+            'message' => 'Failed to prepare statement: ' . $conn->error
         ]);
     }
     exit;
@@ -395,10 +426,157 @@ if (isset($_POST['action']) && $_POST['action'] === 'getPrograms') {
     exit;
 }
 
+// Function to create content (file or folder)
+if (isset($_POST['action']) && $_POST['action'] === 'createContent') {
+    // Ensure user is authenticated
+    requireAuth();
+
+    try {
+        // Get form data
+        $contentName = $_POST['name'];
+        $contentDescription = $_POST['description'];
+        $contentLabel = $_POST['label'];
+        $contentCategory = $_POST['category'];
+        $contentType = $_POST['type'];
+        $companyId = $_SESSION['companyId'];
+        $userId = $_SESSION['userId'];
+
+        // Generate unique content ID
+        $sql = "SELECT CASE WHEN ISNULL(MAX(SUBSTRING(ContentID, 2, 5))) = 1 
+                THEN 0 ELSE MAX(SUBSTRING(ContentID, 2, 5)) END AS maximum 
+                FROM content WHERE ContentID LIKE 'C%'";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $num = sprintf('C%05d', $row['maximum'] + 1);
+
+        // Start transaction
+        $conn->begin_transaction();
+
+        // Set content path
+        $contentPath = 'Content/' . $num;
+        if (!is_dir($contentPath)) {
+            mkdir($contentPath, 0777, true);
+        }
+
+        // Insert into content table
+        $contentSql = "INSERT INTO content (ContentID, ContentName, ContentDescription, ContentType, ContentPath, ContentLabel) 
+                       VALUES (?, ?, ?, ?, ?, ?)";
+        $contentStmt = $conn->prepare($contentSql);
+        $contentStmt->bind_param("ssssss", $num, $contentName, $contentDescription, $contentType, $contentPath, $contentLabel);
+        $contentStmt->execute();
+        $contentStmt->close();
+
+        // Process uploaded files
+        if (isset($_FILES['files'])) {
+            foreach ($_FILES['files']['name'] as $key => $name) {
+                if (strlen($_FILES['files']['name'][$key]) > 1) {
+                    $tmp_name = $_FILES['files']['tmp_name'][$key];
+                    move_uploaded_file($tmp_name, $contentPath . '/' . $name);
+                }
+            }
+        }
+
+        // Commit transaction
+        $conn->commit();
+
+        // Redirect to manage content page
+        echo json_encode(['success' => true, 'message' => 'Content created successfully', 'redirect' => 'manage-content.php']);
+    } catch (Exception $e) {
+        // Rollback transaction on error
+        $conn->rollback();
+
+        error_log("Error creating content: " . $e->getMessage());
+        echo json_encode(['success' => false, 'message' => 'Error creating content: ' . $e->getMessage()]);
+    }
+    exit;
+}
+
+
+
+// Function to get folders for dropdown selection
+if (isset($_POST['action']) && $_POST['action'] === 'getFolders') {
+    // Ensure user is authenticated
+    requireAuth();
+    
+    try {
+        // Get all folders from content table
+        $sql = "SELECT ContentID, ContentName 
+               FROM content 
+               WHERE ContentType = 'folder'
+               ORDER BY ContentName ASC";
+        
+        $folders = [];
+        if ($result = $conn->query($sql)) {
+            while ($row = $result->fetch_assoc()) {
+                $folders[] = [
+                    'id' => $row['ContentID'],
+                    'name' => $row['ContentName']
+                ];
+            }
+            $result->close();
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'folders' => $folders
+        ]);
+    } catch (Exception $e) {
+        error_log("Error fetching folders: " . $e->getMessage());
+        echo json_encode([
+            'success' => false,
+            'message' => 'Error fetching folders: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
+// Function to create topic
+if (isset($_POST['action']) && $_POST['action'] === 'createTopic') {
+    // Ensure user is authenticated
+    
+
+    try {
+        // Get form data
+        $topicName = $_POST['name'];
+        $topicDescription = $_POST['description'];
+        
+
+        // Generate unique topic ID
+        $sql = "SELECT CASE WHEN ISNULL(MAX(SUBSTRING(TopicID, 2, 5))) = 1 
+                THEN 0 ELSE MAX(SUBSTRING(TopicID, 2, 5)) END AS maximum 
+                FROM topic WHERE TopicID LIKE 'T%'";
+        $result = $conn->query($sql);
+        $row = $result->fetch_assoc();
+        $topicId = sprintf('T%05d', $row['maximum'] + 1);
+
+        // Insert new topic
+        $insertSql = "INSERT INTO topic (TopicID, TopicName, TopicDescription) VALUES (?, ?, ?)";
+        $stmt = $conn->prepare($insertSql);
+        $stmt->bind_param('sss', $topicId, $topicName, $topicDescription);
+
+        if ($stmt->execute()) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Topic created successfully'
+            ]);
+        } else {
+            throw new Exception($stmt->error);
+        }
+        $stmt->close();
+    } catch (Exception $e) {
+        error_log("Error creating topic: " . $e->getMessage());
+        echo json_encode([
+            'success' => false,
+            'error' => 'Error creating topic: ' . $e->getMessage()
+        ]);
+    }
+    exit;
+}
+
 // Default response for unknown action
 $response = [
     'success' => false,
     'message' => 'Unknown action'
 ];
 echo json_encode($response);
-?> 
+?>

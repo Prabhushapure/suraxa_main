@@ -87,7 +87,7 @@ if ($countStmt = $conn->prepare($countSql)) {
                                 <div class="d-flex justify-content-between align-items-center">
                                     <div class="input-group" style="width: 50%;">
                                         <input type="text" class="form-control" id="searchName" 
-                                               placeholder="Search by username..." 
+                                               placeholder="Search by username or UserID..." 
                                                value="<?php echo htmlspecialchars($nameFilter); ?>">
                                         <button class="btn btn-primary" type="button" onclick="filterByName()">
                                             <i class="fas fa-search"></i> Search
@@ -122,7 +122,7 @@ if ($countStmt = $conn->prepare($countSql)) {
                         $filteredCountSql = "SELECT COUNT(*) as total 
                                            FROM user 
                                            WHERE CompanyID = ? 
-                                           AND UserName LIKE ? ";
+                                           AND (UserName LIKE ? OR UserID LIKE ?) ";
                         
                         // Add status condition based on filter
                         if ($showNewUsers) {
@@ -134,7 +134,7 @@ if ($countStmt = $conn->prepare($countSql)) {
                         $filteredUsers = 0;
                         if ($filteredCountStmt = $conn->prepare($filteredCountSql)) {
                             $searchPattern = "%$nameFilter%";
-                            $filteredCountStmt->bind_param("ss", $_SESSION['companyId'], $searchPattern);
+                            $filteredCountStmt->bind_param("sss", $_SESSION['companyId'], $searchPattern, $searchPattern);
                             $filteredCountStmt->execute();
                             $filteredCountResult = $filteredCountStmt->get_result();
                             $filteredCountRow = $filteredCountResult->fetch_assoc();
@@ -154,6 +154,7 @@ if ($countStmt = $conn->prepare($countSql)) {
                                         <th>
                                             <input type="checkbox" class="form-check-input" id="selectAll">
                                         </th>
+                                        <th>UserID</th>
                                         <th>Username</th>
                                         <th>Login ID</th>
                                         <th>User Role</th>
@@ -165,10 +166,10 @@ if ($countStmt = $conn->prepare($countSql)) {
                                 <tbody>
                                     <?php
                                     // Prepare the SQL query with pagination and search filter
-                                    $sql = "SELECT id, UserName, LoginID, Role as UserRole, UserOrg, Region 
+                                    $sql = "SELECT id, UserID, UserName, LoginID, Role as UserRole, UserOrg, Region 
                                            FROM user 
                                            WHERE CompanyID = ? 
-                                           AND UserName LIKE ? ";
+                                           AND (UserName LIKE ? OR UserID LIKE ?) ";
                                     
                                     // Add status condition based on filter
                                     if ($showNewUsers) {
@@ -181,13 +182,14 @@ if ($countStmt = $conn->prepare($countSql)) {
                                     
                                     if ($stmt = $conn->prepare($sql)) {
                                         $searchPattern = "%$nameFilter%";
-                                        $stmt->bind_param("ssii", $_SESSION['companyId'], $searchPattern, $page_size, $offset);
+                                        $stmt->bind_param("sssii", $_SESSION['companyId'], $searchPattern, $searchPattern, $page_size, $offset);
                                         $stmt->execute();
                                         $result = $stmt->get_result();
                                         
                                         while ($row = $result->fetch_assoc()) {
                                             echo "<tr>";
                                             echo "<td><input type='checkbox' class='form-check-input user-checkbox' value='" . $row['id'] . "'></td>";
+                                            echo "<td>" . htmlspecialchars($row['UserID']) . "</td>";
                                             echo "<td>" . htmlspecialchars($row['UserName']) . "</td>";
                                             echo "<td>" . htmlspecialchars($row['LoginID']) . "</td>";
                                             echo "<td>" . htmlspecialchars($row['UserRole']) . "</td>";

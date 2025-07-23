@@ -60,7 +60,7 @@ function getAllProgramsReport($startDate, $endDate, $nameFilter, $conn, $limit =
             JOIN (
                 SELECT UserID, ProgramID, MAX(PlayNo) as MaxPlayNo
                 FROM user_program_playno 
-                GROUP BY UserID, ProgramID
+                GROUP BY UserID, ProgramID 
             ) latest ON user_program_playno.UserID = latest.UserID 
                      AND user_program_playno.ProgramID = latest.ProgramID 
                      AND user_program_playno.PlayNo = latest.MaxPlayNo

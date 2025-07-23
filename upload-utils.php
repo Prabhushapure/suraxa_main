@@ -105,25 +105,47 @@ function createUsers($rows, $conn) {
     $nextUserNumber = getStartingUserIdNumber($conn) + 1;
     
     foreach ($rows as $row) {
-        $userName = mysqli_real_escape_string($conn, trim($row[0]));
-        $gender = mysqli_real_escape_string($conn, trim($row[1]));
-        $loginId = mysqli_real_escape_string($conn, trim($row[2]));
-        $password = md5(trim($row[3])); // Using MD5 as per existing code
-        $role = mysqli_real_escape_string($conn, trim($row[4]));
-        $creatorAccess = (int)trim($row[5]);
-        $playerAccess = (int)trim($row[6]);
-        $adminAccess = (int)trim($row[7]);
-        $org = mysqli_real_escape_string($conn, trim($row[8]));
-        $region = mysqli_real_escape_string($conn, trim($row[9]));
-        $city = mysqli_real_escape_string($conn, trim($row[10]));
-        
-        // Generate UserID using the incremented number
-        $userId = 'U' . sprintf('%04d', $nextUserNumber++);
+        $userId = trim($row[0]);
+        if ($userId === '') {
+            // Generate UserID using the incremented number
+            $userId = 'U' . sprintf('%04d', $nextUserNumber++);
+        } else {
+            // Check if this UserID already exists
+            $checkUserIdSql = "SELECT COUNT(*) as cnt FROM user WHERE UserID = '" . mysqli_real_escape_string($conn, $userId) . "'";
+            $result = mysqli_query($conn, $checkUserIdSql);
+            $rowCheck = mysqli_fetch_assoc($result);
+            if ($rowCheck['cnt'] > 0) {
+                return array(
+                    'success' => false,
+                    'message' => 'The User ID ' . $userId . ' already exists. Please choose a different User ID or leave blank for auto-generation.'
+                );
+            }
+        }
+        $userName = mysqli_real_escape_string($conn, trim($row[1]));
+        $gender = mysqli_real_escape_string($conn, trim($row[2]));
+        $loginId = mysqli_real_escape_string($conn, trim($row[3]));
+        $password = md5(trim($row[4])); // Using MD5 as per existing code
+        $role = mysqli_real_escape_string($conn, trim($row[5]));
+        $creatorAccess = (int)trim($row[6]);
+        $playerAccess = (int)trim($row[7]);
+        $adminAccess = (int)trim($row[8]);
+        $org = mysqli_real_escape_string($conn, trim($row[9]));
+        $region = mysqli_real_escape_string($conn, trim($row[10]));
+        $city = mysqli_real_escape_string($conn, trim($row[11]));
+        $mobile = mysqli_real_escape_string($conn, trim($row[12]));
+        $employeeStatus = mysqli_real_escape_string($conn, trim($row[13]));
+        $employeeLevel = mysqli_real_escape_string($conn, trim($row[14]));
+        $division = mysqli_real_escape_string($conn, trim($row[15]));
+        $department = mysqli_real_escape_string($conn, trim($row[16]));
+        $designation = mysqli_real_escape_string($conn, trim($row[17]));
+        $location = mysqli_real_escape_string($conn, trim($row[18]));
+        $block = mysqli_real_escape_string($conn, trim($row[19]));
+        $function = mysqli_real_escape_string($conn, trim($row[20]));
         
         $values[] = "(
             '$userId', '$password', '$userName', '$gender', '$companyId', 
             '$loginId', '$role', $creatorAccess, $playerAccess, $adminAccess,
-            1, '$org', '$region', '$city'
+            1, '$org', '$region', '$city', '$mobile', '$employeeStatus', '$employeeLevel', '$division', '$department', '$designation', '$location', '$block', '$function'
         )";
     }
     
@@ -135,7 +157,7 @@ function createUsers($rows, $conn) {
             $sql = "INSERT INTO user (
                 UserID, Password, UserName, Gender, CompanyID,
                 LoginID, Role, CreatorAccess, PlayerAccess, AdminAccess,
-                UserStatus, UserOrg, Region, City
+                UserStatus, UserOrg, Region, City, Mobile, EmpRollStatus, EmpLevel, Division, Department, Designation, Location, Block, JobFunction
             ) VALUES " . implode(',', $values);
             
             if (!mysqli_query($conn, $sql)) {
@@ -177,6 +199,7 @@ if (isset($_POST["downloadSample"])) {
     
     // Add CSV headers - these match the required fields for user creation
     fputcsv($output, array(
+        'UserID',
         'UserName',
         'Gender(M/F)',
         'LoginID(Email)',
@@ -187,11 +210,21 @@ if (isset($_POST["downloadSample"])) {
         'AdminAccess(1/0)',
         'Organization/Vendor',
         'Region',
-        'City'
+        'City',
+        'Mobile',
+        'EmployeeStatus',
+        'EmployeeLevel',
+        'Division',
+        'Department',
+        'Designation',
+        'Location',
+        'Block',
+        'JobFunction'
     ));
 
     // Add a sample row to help users understand the format
     fputcsv($output, array(
+        '', // UserID left blank for auto-generation
         'Rajesh Krishna',
         'M',
         'rajesh.k@gmail.com',
@@ -202,7 +235,8 @@ if (isset($_POST["downloadSample"])) {
         '0',
         'ABC platform',
         'North',
-        'Bengaluru'
+        'Bengaluru',
+        '', '', '', '', '', '', '', '', ''
     ));
 
     fclose($output);
@@ -230,6 +264,7 @@ if (isset($_POST['action']) && $_POST['action'] === 'uploadCSV') {
         $orgs = array();
         $regions = array();
         $loginIds = array();
+        $userIds = array();
         
         if (($handle = fopen($_FILES['csvFile']['tmp_name'], "r")) !== FALSE) {
             // Skip header row
@@ -237,11 +272,14 @@ if (isset($_POST['action']) && $_POST['action'] === 'uploadCSV') {
             
             // Read data rows
             while (($data = fgetcsv($handle)) !== FALSE) {
-                if (!empty($data[0])) { // Only process rows with a username
+                if (!empty($data[1])) { // Only process rows with a username (now at index 1)
+                    // Pad missing fields with empty string
+                    $data = array_pad($data, 21, '');
                     $rows[] = $data;
-                    $orgs[] = trim($data[8]); // Organization column
-                    $regions[] = trim($data[9]); // Region column
-                    $loginIds[] = trim($data[2]); // LoginID column
+                    $userIds[] = trim($data[0]); // UserID column
+                    $orgs[] = trim($data[9]); // Organization column
+                    $regions[] = trim($data[10]); // Region column
+                    $loginIds[] = trim($data[3]); // LoginID column
                 }
             }
             fclose($handle);

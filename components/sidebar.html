@@ -4,6 +4,29 @@
         <img src="./assets/images/suraxa-logo.png" alt="Suraxa Logo" class="sidebar-logo">
     </div>
     <div class="list-group">
+        <a href="/help.php" class="list-group-item">
+            <i class="bi bi-question-circle"></i> Help
+        </a>
+        <a href="#usersSubmenu" data-bs-toggle="collapse" class="list-group-item">
+            <i class="bi bi-people"></i> User Management
+        </a>
+        <div class="collapse" id="usersSubmenu">
+            <a href="add-user.php" class="list-group-item">
+                Add New User
+            </a>
+            <a href="manage-users.php" class="list-group-item">
+                Manage Users
+            </a>
+            <a href="#" class="list-group-item">
+                Reset User password
+            </a>
+            <a href="bulk-upload.php" class="list-group-item">
+                Import Bulk Users
+            </a>
+            <!-- <a href="#" class="list-group-item">
+                Edit Bulk Users
+            </a> -->
+        </div>
         <a href="#dashboardSubmenu" data-bs-toggle="collapse" class="list-group-item">
             <i class="bi bi-speedometer2"></i> Dashboard
         </a>
@@ -13,43 +36,6 @@
             </a>
             <a href="#" class="list-group-item">
                 Detailed Dashboard
-            </a>
-        </div>
-        <a href="#usersSubmenu" data-bs-toggle="collapse" class="list-group-item">
-            <i class="bi bi-people"></i> User Management
-        </a>
-        <div class="collapse" id="usersSubmenu">
-            <a href="/add-user.php" class="list-group-item">
-                Add New User
-            </a>
-            <a href="#" class="list-group-item">
-                Manage Users
-            </a>
-            <a href="#" class="list-group-item">
-                Reset User password
-            </a>
-            <a href="#" class="list-group-item">
-                Import Bulk Users
-            </a>
-            <!-- <a href="#" class="list-group-item">
-                Edit Bulk Users
-            </a> -->
-        </div>
-        <a href="#librarySubmenu" data-bs-toggle="collapse" class="list-group-item">
-            <i class="bi bi-book"></i> Library Management
-        </a>
-        <div class="collapse" id="librarySubmenu">
-            <a href="#" class="list-group-item">
-                Create Content (File or Folder)
-            </a>
-            <a href="#" class="list-group-item">
-                Manage Content
-            </a>
-            <a href="#" class="list-group-item">
-                Manage Topics
-            </a>
-            <a href="#" class="list-group-item">
-                Link Topic & Content
             </a>
         </div>
         <a href="#reportsSubmenu" data-bs-toggle="collapse" class="list-group-item">
@@ -74,8 +60,25 @@
                 Reset Admin Password
             </a>
         </div>
-        <a href="/help.php" class="list-group-item">
-            <i class="bi bi-question-circle"></i> Help
+        <a href="#librarySubmenu" data-bs-toggle="collapse" class="list-group-item">
+            <i class="bi bi-book"></i> Library Management
         </a>
+        <div class="collapse" id="librarySubmenu">
+            <a href="#" class="list-group-item">
+                Create Content (File or Folder)
+            </a>
+            <a href="#" class="list-group-item">
+                Manage Content
+            </a>
+            <a href="#" class="list-group-item">
+                Manage Topics
+            </a>
+            <a href="#" class="list-group-item">
+                Link Topic & Content
+            </a>
+        </div>
+        
+        
+        
     </div>
 </div>

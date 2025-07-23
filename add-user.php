@@ -77,6 +77,16 @@ require_once 'includes/db_connect.php';
                                 </div>
                             </div>
 
+                            <!-- User ID (not required) -->
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="userId" class="form-label fw-bold">User ID</label>
+                                    <input type="text" class="form-control" id="userId" name="userId"
+                                           data-bs-toggle="tooltip" data-bs-placement="right" 
+                                           title="Optional: Enter a User ID if you want to specify one">
+                                </div>
+                            </div>
+
                             <div class="mb-3 row">
                                 <div class="col-md-6">
                                     <label for="loginId" class="form-label fw-bold">Login ID (Email) *</label>
@@ -203,6 +213,60 @@ require_once 'includes/db_connect.php';
                                 <div class="col-md-6">
                                     <label for="city" class="form-label fw-bold">City</label>
                                     <input type="text" class="form-control" id="city" name="city">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="mobile" class="form-label fw-bold">Mobile</label>
+                                    <input type="text" class="form-control" id="mobile" name="mobile">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="employeeStatus" class="form-label fw-bold">Employee Status</label>
+                                    <input type="text" class="form-control" id="employeeStatus" name="employeeStatus">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="employeeLevel" class="form-label fw-bold">Employee Level</label>
+                                    <input type="text" class="form-control" id="employeeLevel" name="employeeLevel">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="division" class="form-label fw-bold">Division</label>
+                                    <input type="text" class="form-control" id="division" name="division">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="department" class="form-label fw-bold">Department</label>
+                                    <input type="text" class="form-control" id="department" name="department">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="designation" class="form-label fw-bold">Designation</label>
+                                    <input type="text" class="form-control" id="designation" name="designation">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="location" class="form-label fw-bold">Location</label>
+                                    <input type="text" class="form-control" id="location" name="location">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="block" class="form-label fw-bold">Block</label>
+                                    <input type="text" class="form-control" id="block" name="block">
+                                </div>
+                            </div>
+                            <div class="mb-3 row">
+                                <div class="col-md-6">
+                                    <label for="function" class="form-label fw-bold">Function</label>
+                                    <input type="text" class="form-control" id="function" name="function">
                                 </div>
                             </div>
 
@@ -435,6 +499,7 @@ require_once 'includes/db_connect.php';
                 const formData = new FormData();
                 formData.append('action', 'createUser');
                 formData.append('username', inputs.username.value);
+                formData.append('userId', document.getElementById('userId').value); // Add this line to include userId
                 formData.append('loginId', inputs.loginId.value);
                 formData.append('password', inputs.password.value);
                 formData.append('gender', $('input[name="gender"]:checked').val());
@@ -443,6 +508,15 @@ require_once 'includes/db_connect.php';
                 formData.append('userOrg', $('#userOrg').val());
                 formData.append('userRegion', $('#userRegion').val());
                 formData.append('city', $('#city').val());
+                formData.append('mobile', $('#mobile').val());
+                formData.append('employeeStatus', $('#employeeStatus').val());
+                formData.append('employeeLevel', $('#employeeLevel').val());
+                formData.append('division', $('#division').val());
+                formData.append('department', $('#department').val());
+                formData.append('designation', $('#designation').val());
+                formData.append('location', $('#location').val());
+                formData.append('block', $('#block').val());
+                formData.append('function', $('#function').val());
 
                 // Disable submit button and show loading state
                 submitBtn.disabled = true;

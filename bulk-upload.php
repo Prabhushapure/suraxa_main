@@ -71,6 +71,7 @@ require_once 'includes/db_connect.php';
                                         <li>Open the file in excel or google sheets.</li>
                                         <li>First row is the headings and the second row is a sample user data row. </li>
                                         <li>Now remove the sample user row, and add in the new users and their details in each row. Each row should contain one user's details. </li>
+                                        <li><b>New:</b> The first column is <b>UserID</b>. If you want to specify a UserID, enter it here. If you leave it blank, the system will auto-generate a UserID in the U-series (e.g., U0001, U0002, ...).</li>
                                         <li>For fields like Gender (M/F), PlayerAccess(1/0), Please use the value in the brackets (use the sample data row as example)</li>
                                         <li>Once completed, save the file, and Export it as .csv file. (File > Download/Export > Comma-seperated values .csv)</li>
                                     </ol>
